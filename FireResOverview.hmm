@@ -1,0 +1,28 @@
+FireResCenter
+	FireRes
+		modelacion
+			1. scenarios,stages,seasons
+				rolling horizon realtime watch & assist
+				4Seasons2Stages
+			2. cell
+				3d PDE mass+wind+chem step simulator
+			3. firebehaviour
+			4. weather
+			5. geo
+				fuels
+			parallel... np-hard-ware implementation
+		datos
+			visualization
+			autodataremota
+	ResTopics
+		model simul shopt
+		autogathering classification data generation methodologies
+		climate change
+		fire pandemic
+		bio
+	ResEar(th)chers
+		people
+	ResFunding
+		papers
+		foss tools
+		Fondeff
