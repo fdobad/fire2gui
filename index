@@ -1,4 +1,4 @@
-README.md
+fire2gui
 	plan
 		objetivo: socializar c2fSB desarrollando GUI
 		usuario: cientificos sin experiencia en instalar y compilar
@@ -84,5 +84,7 @@ README.md
 		qgis skeletons
 			minimal plugin
 			minimal standalone
+		<a href="https://github.com/fdobad/fire2gui/blob/main/FireResOverview.html">FireResOverview</a>
 	mission critical
 		probar que windows instala y ejecuta plugin en zip con binario de c2f
+	<a href="https://github.com/fdobad/fire2gui">volver al repo</a>
