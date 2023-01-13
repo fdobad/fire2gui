@@ -1,0 +1,5 @@
+jupyterlab
+matplotlib
+ipympl
+elevation
+rasterio

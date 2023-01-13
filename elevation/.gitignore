@@ -1,0 +1,15 @@
+# vim
+.netrwhist
+*swp
+*swo
+*~
+
+# jupyter notebook
+.ipynb_checkpoints/
+
+# python Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+pyvenv/
+

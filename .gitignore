@@ -1,0 +1,22 @@
+credentials.md
+
+# vim
+.netrwhist
+*swp
+*swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Environments
+env/
+venv/

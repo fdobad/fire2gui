@@ -1,0 +1,96 @@
+
+# TODO:
+- plot (2y3d) jupyterlab interactive
+- paint fuel types
+
+# install
+```
+$ sudo apt install python3-gdal gdal-bin
+$ git clone
+$ cd
+$ python3 -m venv pyvenv
+$ source pyvenv/bin/activate
+$ eio selfcheck
+```
+
+# usage
+## elevation to tif
+clip the SRTM1 30m DEM
+```
+import elevation
+
+# bounds 'left bottom right top' order.
+# latitude and longitude coordinates (more precisely in geodetic coordinates in the WGS84 reference system EPSG:4326)
+bounds = (-70.64499, -33.44232, -70.64213, -33.43770) # sta lucia
+bounds = (-70.6543,-33.4444, -70.5698, -33.3793) # parque metropolitano
+
+# else output goes to elevation.CACHE_DIR e.g.: ~/.cache/elevation/SRTM1/out.tif
+import os
+output = os.path.join( os.getcwd() , 'dem.tif')
+
+elevation.clip( bounds, product='SRTM1', output=output)
+```
+# tif to raster(io)
+```
+import rasterio
+dataset = rasterio.open('dem.tif')
+
+# some properties
+print(dataset.dtypes, dataset.width, dataset.height, dataset.bounds, dataset.crs)
+
+# upper left corner
+dataset.transform * (0, 0) 
+# lower right corner
+dataset.transform * (dataset.width, dataset.height)
+
+# get data array
+dataset.indexes
+band1 = dataset.read(1) # returns 2d numpy array
+
+# get info
+os.popen('rio info dem.tif --indent 2 --verbose').readlines()
+```
+## plot
+```
+from matplotlib import pyplot as plt
+plt.imshow(dataset.read(1), cmap='terrain')
+plt.savefig('out.png')
+```
+
+## translate dem
+### tif -> asc
+```
+$ gdal_translate -of AAIGrid cerroSantaLucia.tif cerroSantaLucia.asc
+# entrega archivo con 
+# cellsize = 0.000277777778 que corresponde a 30m
+# multiplicar cellsize x 3.3333 para tener 100m
+gdal_translate -tr 0.0009259259266657407 0.0009259259266657407 -of AAIGrid cerroSantaLucia.tif test.asc
+```
+
+### lat/long -> utm
+```
+$ gdaltransform -s_srs epsg:4326 -t_srs epsg:24879
+Enter X Y [Z [T]] values separated by space, and press Return.
+-70.645138888889 -33.442361111111
+347264.443426759 6298834.38844403 0
+```
+
+- Desde, lat/long es: WGS84 reference system EPSG:4326
+- Hasta, en Chile:
+ - zona sur: EPSG:24879 > PSAD56 / UTM zone 19S
+ - zona norte: EPSG:29193 SAD69 / UTM zone 23S
+
+# references
+https://www.sirgaschile.cl/ConversionSC/transformadorDatum.html
+https://epsg.io/24879
+https://epsg.io/29193 
+https://gdal.org/programs/gdaltransform.html
+https://gdal.org/programs/gdal_translate.html
+https://www.researchgate.net/post/How-to-obtain-digital-elevation-data-in-ascii-format
+https://www.openstreetmap.org
+http://elevation.bopen.eu/en/stable/quickstart.html
+https://rasterio.readthedocs.io/en/latest/quickstart.html
+
+# plop
+https://stackoverflow.com/questions/55827778/elevation-xyz-data-to-slope-gradient-map-using-python
+https://stackoverflow.com/search?q=python+elevation&s=676696f8-8555-45f8-b4ae-c2adceb79ded
