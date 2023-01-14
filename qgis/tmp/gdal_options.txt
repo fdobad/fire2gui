@@ -1,0 +1,102 @@
+processing.algorithmHelp("gdal:translate")
+Translate (convert format) (gdal:translate)
+
+
+----------------
+Input parameters
+----------------
+
+INPUT: Input layer
+
+	Parameter type:	QgsProcessingParameterRasterLayer
+
+	Accepted data types:
+		- str: layer ID
+		- str: layer name
+		- str: layer source
+		- QgsProperty
+		- QgsRasterLayer
+
+TARGET_CRS: Override the projection for the output file
+
+	Parameter type:	QgsProcessingParameterCrs
+
+	Accepted data types:
+		- str: 'ProjectCrs'
+		- str: CRS auth ID (e.g. 'EPSG:3111')
+		- str: CRS PROJ4 (e.g. 'PROJ4:…')
+		- str: CRS WKT (e.g. 'WKT:…')
+		- str: layer ID. CRS of layer is used.
+		- str: layer name. CRS of layer is used.
+		- str: layer source. CRS of layer is used.
+		- QgsCoordinateReferenceSystem
+		- QgsMapLayer: CRS of layer is used
+		- QgsProcessingFeatureSourceDefinition: CRS of source is used
+		- QgsProperty
+
+NODATA: Assign a specified nodata value to output bands
+
+	Parameter type:	QgsProcessingParameterNumber
+
+	Accepted data types:
+		- int
+		- float
+		- QgsProperty
+
+COPY_SUBDATASETS: Copy all subdatasets of this file to individual output files
+
+	Parameter type:	QgsProcessingParameterBoolean
+
+	Accepted data types:
+		- bool
+		- int
+		- str
+		- QgsProperty
+
+OPTIONS: Additional creation options
+
+	Parameter type:	QgsProcessingParameterString
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+EXTRA: Additional command-line parameters
+
+	Parameter type:	QgsProcessingParameterString
+
+	Accepted data types:
+		- str
+		- QgsProperty
+
+DATA_TYPE: Output data type
+
+	Parameter type:	QgsProcessingParameterEnum
+
+	Available values:
+		- 0: Use Input Layer Data Type
+		- 1: Byte
+		- 2: Int16
+		- 3: UInt16
+		- 4: UInt32
+		- 5: Int32
+		- 6: Float32
+		- 7: Float64
+		- 8: CInt16
+		- 9: CInt32
+		- 10: CFloat32
+		- 11: CFloat64
+
+	Accepted data types:
+		- int
+		- str: as string representation of int, e.g. '1'
+		- QgsProperty
+
+OUTPUT: Converted
+
+	Parameter type:	QgsProcessingParameterRasterDestination
+
+	Accepted data types:
+		- str
+		- QgsProperty
+		- QgsProcessingOutputLayerDefinition

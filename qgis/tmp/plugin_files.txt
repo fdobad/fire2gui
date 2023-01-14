@@ -1,0 +1,4 @@
+LICENSE
+metadata.txt
+__init__.py
+mainPlugin.py

@@ -1,0 +1,14 @@
+qgis
+PyQt5
+matplotlib
+numpy
+seaborn
+imread
+tqdm
+networkx
+rasterio
+scipy
+deap
+elevation
+rasterio
+os
