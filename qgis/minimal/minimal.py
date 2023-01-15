@@ -19,18 +19,24 @@ from qgis.PyQt.QtWidgets import (
     )
 
 class MyDialog(QDialog):
-    def __init__(self):
-        QDialog.__init__(self)
+    def __init__(self, parent=None):
+        super(MyDialog, self).__init__(parent)
+    #def __init__(self):
+    #    QDialog.__init__(self)
         self.bar = QgsMessageBar()
         self.bar.setSizePolicy( QSizePolicy.Minimum, QSizePolicy.Fixed )
         self.setLayout(QGridLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
-        self.buttonbox = QDialogButtonBox(QDialogButtonBox.Ok)
+        self.buttonbox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
         self.buttonbox.accepted.connect(self.run)
+        self.buttonbox.clicked.connect(self.run2)
         self.layout().addWidget(self.buttonbox, 0, 0, 2, 1)
         self.layout().addWidget(self.bar, 0, 0, 1, 1)
+        self.run()
     def run(self):
-        self.bar.pushMessage("Hello", "World", level=Qgis.Info)
+        self.bar.pushMessage("Hello", "World", level=Qgis.Info, duration=3)
+    def run2(self):
+        self.bar.pushMessage("Bye", "World", level=Qgis.Info, duration=3)
 
 class MinimalPlugin:
     def __init__(self, iface):
@@ -47,8 +53,8 @@ class MinimalPlugin:
 
     def run(self):
         #QgsMessageLog.logMessage("(minimal.run) Hello World!", 'FirePlugin', level=Qgis.Info)
-        myDlg = MyDialog()
+        myDlg = MyDialog(parent=self.iface.mainWindow())
         myDlg.show()
-        myDlg._exec()
+        #myDlg.run()
         #QMessageBox.information(None, 'Minimal plugin', 'Do something useful here')
         #QgsMessageLog.logMessage("(minimal.run) Bye World!", 'FirePlugin', level=Qgis.Info)
