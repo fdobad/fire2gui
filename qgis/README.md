@@ -66,6 +66,14 @@ pip install nose pb_tool
 - [no binaries!!](https://plugins.qgis.org/publish/)
 - [homepage](https://plugins.qgis.org/)
 - [windows python packages?](https://landscapearchaeology.org/2018/installing-python-packages-in-qgis-3-for-windows/)
+- [windows python packages ugly](https://www.lutraconsulting.co.uk/blog/2016/03/02/installing-third-party-python-modules-in-qgis-windows/)
+
+## qgis
+- [core developer tips](https://woostuff.wordpress.com/)
+- [core developer tips](http://nyalldawson.net/)
+- [workshop](https://madmanwoo.gitlab.io/foss4g-python-workshop/)
+- [custom processing script](https://madmanwoo.gitlab.io/foss4g-python-workshop/processing/)
+- [qgisblog](https://kartoza.com/search?q=qgis)
 - []()
 
 

@@ -46,8 +46,9 @@ class MinimalPlugin:
         del self.action
 
     def run(self):
-        QgsMessageLog.logMessage("(minimal.run) Hello World!", 'FirePlugin', level=Qgis.Info)
+        #QgsMessageLog.logMessage("(minimal.run) Hello World!", 'FirePlugin', level=Qgis.Info)
         myDlg = MyDialog()
         myDlg.show()
+        myDlg._exec()
         #QMessageBox.information(None, 'Minimal plugin', 'Do something useful here')
-        QgsMessageLog.logMessage("(minimal.run) Bye World!", 'FirePlugin', level=Qgis.Info)
+        #QgsMessageLog.logMessage("(minimal.run) Bye World!", 'FirePlugin', level=Qgis.Info)
