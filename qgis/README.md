@@ -67,15 +67,17 @@ pip install nose pb_tool
 
 # references
 ## pyqgis
-- [pyqgis docs](https://www.qgis.org/pyqgis/master/)
+- [pyQt5.qtwidgets-module](https://www.riverbankcomputing.com/static/Docs/PyQt5/api/qtwidgets/qtwidgets-module.html)
+- [pyqgis docs](https://www.qgis.org/pyqgis/master/index.html)
 - [developer cookbook](https://docs.qgis.org/latest/en/docs/pyqgis_developer_cookbook/intro.html)
 - [qobject multithreading?](https://github.com/wonder-sk/qgis-mtr-example-plugin/blob/master/plugin.py)
 
 ## plugins
+- [tutorial](https://gis-ops.com/qgis-3-plugin-tutorial-plugin-development-reference-guide/)
 - [minimal plugin repo](https://github.com/wonder-sk/qgis-minimal-plugin)
 - [plugin debugger](https://github.com/wonder-sk/qgis-first-aid-plugin)
-- [no binaries!!](https://plugins.qgis.org/publish/)
 - [homepage](https://plugins.qgis.org/)
+- [no binaries!!](https://plugins.qgis.org/publish/)
 - [windows python packages?](https://landscapearchaeology.org/2018/installing-python-packages-in-qgis-3-for-windows/)
 - [windows python packages ugly](https://www.lutraconsulting.co.uk/blog/2016/03/02/installing-third-party-python-modules-in-qgis-windows/)
 
