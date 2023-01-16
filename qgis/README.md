@@ -1,11 +1,22 @@
 __qGIS python development__
 
+# What's here
+```
+firemodule/                 :   plug in builder widget dialog based
+minimal/                    :   qgis-minimal-plugin based 
+ProcessingScriptExample/    :   Processing > ToolBox > Scripts > Open/Add... example
+QgisRequests/               :   qgis web-api requests 
+qgisUserFolder/             :   user sandbox
+standalone/                 :   app that uses qgis but not qgis desktop
+tmp/                        :   dev space
+```
+
 # testing
 ## run QGIS Desktop
 Run qgis from a terminal in the provided folder
 ```
-$ cd fire2gui/qgis/qgisUserFolder/project.qgz
-$ qgis
+$ cd fire2gui/qgis/qgisUserFolder/
+$ qgis project.qgz
 ```
 
 ## minimal manual install
@@ -75,6 +86,3 @@ pip install nose pb_tool
 - [custom processing script](https://madmanwoo.gitlab.io/foss4g-python-workshop/processing/)
 - [qgisblog](https://kartoza.com/search?q=qgis)
 - []()
-
-
-
