@@ -24,6 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
+from qgis.core import QgsMessageLog, Qgis
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -179,6 +180,13 @@ class FireClass:
                 action)
             self.iface.removeToolBarIcon(action)
 
+    def pushButton_callback(self):
+        #self.bar.pushMessage("accepted", "Hello World", level=Qgis.Info, duration=3)
+        QgsMessageLog.logMessage("pushButton_callback", 'fireName', level=Qgis.Info)
+
+    def checkBox_callback(self):
+        #self.bar.pushMessage("accepted", "Hello World", level=Qgis.Info, duration=3)
+        QgsMessageLog.logMessage("checkBox_callback"+str(self.dlg.checkBox.isChecked()), 'fireName', level=Qgis.Info)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -188,11 +196,16 @@ class FireClass:
         if self.first_start == True:
             self.first_start = False
             self.dlg = FireClassDialog()
+            self.dlg.pushButton.clicked.connect(self.pushButton_callback)
+            self.dlg.checkBox.stateChanged.connect(self.checkBox_callback)
+            #self.dlg.checkBox.clicked.connect(self.checkBox_callback)
 
+        QgsMessageLog.logMessage('befor dlg.show()', "fireName", level=Qgis.Info)
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
+
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
