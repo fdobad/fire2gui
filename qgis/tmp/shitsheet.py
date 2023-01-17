@@ -1,6 +1,11 @@
 '''
 __QGIS plugin development shitsheet__
 '''
+# get the ignition point in a layer
+layers_byName = { l.name():l for l in QgsProject.instance().mapLayers().values() }
+il = layers_byName['ignition']
+[ f for f in il.getFeatures()][0].geometry()
+
 # qgis console has this preloaded
 from qgis.core import *
 import qgis.utils

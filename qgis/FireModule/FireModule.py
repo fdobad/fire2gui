@@ -32,6 +32,10 @@ from .resources import *
 from .FireModule_dialog import FireClassDialog
 import os.path
 
+# interactively
+#from resources import *
+#from FireModule_dialog import FireClassDialog
+
 
 class FireClass:
     """QGIS Plugin Implementation."""
@@ -67,7 +71,6 @@ class FireClass:
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
         self.first_start = None
-
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -82,8 +85,6 @@ class FireClass:
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('FireClass', message)
-
-
     def add_action(
         self,
         icon_path,
@@ -157,10 +158,8 @@ class FireClass:
         self.actions.append(action)
 
         return action
-
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-
         icon_path = ':/plugins/FireModule/icon.png'
         self.add_action(
             icon_path,
@@ -170,8 +169,6 @@ class FireClass:
 
         # will be set False in run()
         self.first_start = True
-
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -180,13 +177,13 @@ class FireClass:
                 action)
             self.iface.removeToolBarIcon(action)
 
-    def pushButton_callback(self):
-        #self.bar.pushMessage("accepted", "Hello World", level=Qgis.Info, duration=3)
-        QgsMessageLog.logMessage("pushButton_callback", 'fireName', level=Qgis.Info)
+    def tab_callback(self):
+        msg = self.dlg.tabWidget.currentIndex()
+        QgsMessageLog.logMessage('tab_callback\t'+str(msg), "fire2gui", level=Qgis.Info)
 
-    def checkBox_callback(self):
-        #self.bar.pushMessage("accepted", "Hello World", level=Qgis.Info, duration=3)
-        QgsMessageLog.logMessage("checkBox_callback"+str(self.dlg.checkBox.isChecked()), 'fireName', level=Qgis.Info)
+    def file_callback(self):
+        msg = self.dlg.mQgsFileWidget.filePath()
+        QgsMessageLog.logMessage('file_callback\t'+str(msg), "fire2gui", level=Qgis.Info)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -196,11 +193,14 @@ class FireClass:
         if self.first_start == True:
             self.first_start = False
             self.dlg = FireClassDialog()
-            self.dlg.pushButton.clicked.connect(self.pushButton_callback)
-            self.dlg.checkBox.stateChanged.connect(self.checkBox_callback)
-            #self.dlg.checkBox.clicked.connect(self.checkBox_callback)
+            # tabs 
+            self.dlg.tabWidget.currentChanged.connect(self.tab_callback)
+            # folders
+            self.dlg.mQgsFileWidget.lineEdit().setValue('...Select the folder with instance files') 
+            self.dlg.mQgsFileWidget.fileChanged.connect(self.file_callback)
+            self.dlg.mQgsFileWidget_2.setFilePath(os.getcwd())
+            #self.dlg.mQgsFileWidget.setFilePath(os.getcwd())
 
-        QgsMessageLog.logMessage('befor dlg.show()', "fireName", level=Qgis.Info)
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
@@ -211,3 +211,39 @@ class FireClass:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
+'''
+    def pushButton_callback(self):
+        #self.bar.pushMessage("accepted", "Hello World", level=Qgis.Info, duration=3)
+        QgsMessageLog.logMessage("pushButton_callback", 'fire2gui', level=Qgis.Info)
+
+    def checkBox_callback(self):
+        #self.bar.pushMessage("accepted", "Hello World", level=Qgis.Info, duration=3)
+        QgsMessageLog.logMessage("checkBox_callback"+str(self.dlg.checkBox.isChecked()), 'fire2gui', level=Qgis.Info)
+
+    def radioButtonC1_callback(self):
+        #self.bar.pushMessage("accepted", "Hello World", level=Qgis.Info, duration=3)
+        isC=self.dlg.radioButtonC1.isChecked()
+        isE=self.dlg.radioButtonC1.isEnabled()
+        pW=str(self.dlg.radioButtonC1.parentWidget())
+        QgsMessageLog.logMessage("radioButton_callback \t checked %s \t enabled %s parent %s"%(isC,isE,pW), 'fire2gui', level=Qgis.Info)
+
+    def radioButtonC2_callback(self):
+        #self.bar.pushMessage("accepted", "Hello World", level=Qgis.Info, duration=3)
+        isC=self.dlg.radioButtonC2.isChecked()
+        isE=self.dlg.radioButtonC2.isEnabled()
+        pW=str(self.dlg.radioButtonC2.parentWidget())
+        QgsMessageLog.logMessage("radioButton_callback \t checked %s \t enabled %s parent %s"%(isC,isE,pW), 'fire2gui', level=Qgis.Info)
+
+    def radioButtonR_callback(self):
+        #self.bar.pushMessage("accepted", "Hello World", level=Qgis.Info, duration=3)
+        isC=self.dlg.radioButtonR.isChecked()
+        isE=self.dlg.radioButtonR.isEnabled()
+        pW=str(self.dlg.radioButtonR.parentWidget())
+        QgsMessageLog.logMessage("radioButton_callback \t checked %s \t enabled %s parent %s"%(isC,isE,pW), 'fire2gui', level=Qgis.Info)
+            self.dlg.pushButton.clicked.connect(self.pushButton_callback)
+            self.dlg.checkBox.stateChanged.connect(self.checkBox_callback)
+            self.dlg.radioButtonR.toggled.connect(self.radioButtonR_callback)
+            self.dlg.radioButtonC1.toggled.connect(self.radioButtonC1_callback)
+            self.dlg.radioButtonC2.toggled.connect(self.radioButtonC2_callback)
+
+'''

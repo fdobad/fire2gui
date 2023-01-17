@@ -1,0 +1,68 @@
+ui
+	rasters
+		transformar entre numpy/raster/shape
+		geolocalizar outputs
+	simular
+		1 scenario
+			✓ seleccionar weather
+			✓ seleccionar punto de ignicion
+			output
+				intensidad
+				ros
+		n incendios
+			igniciones
+				aleatorias
+				ipm
+					ignition prob map
+	weather
+		scotburgan
+			escenario de humedad
+		kiltral
+			un numero continuo de humedad
+	minimal c2f
+		inputs
+			✗ .asc elevation [optional]
+				podria ser opcional
+			✓ .asc fuels
+			✓ n .csv weathers
+				wspeed, direction, dt
+				cmdOptions
+					--weathers
+						combobox (String)
+						constant, distribution, random, rows
+						chao distribucion
+					--nweathers
+						int
+					ui
+						informar sobre carpeta weathers o unico weather.csv
+						radio select
+							o1: constant : input float de speed y direction
+							o2:variable
+								o2.1:random
+									input int de maximo int sobre cual hacer random
+								o2.2:rows
+				fdoOptions
+					get forecast?
+			✓ sistema de combustible
+				lookup_table.csv
+				agarra el numero en la celda de fuels y asocia mas parametros de comportamiento
+			✓ ignition
+				radio select
+					random
+					ig point
+						1. encontrar ultimo punto clikeado en layaer
+						2 penca poner coords
+							no olvidar buffer o radius
+					ignition prob map [optional]
+						ponga su raster ipm.asc
+			[optional] DPV capa de valor en riesgo del mapa
+		optiones
+			n simulaciones
+		output
+			stats
+			isocronas (el borde del firescar en tiempo)
+			intensidad
+			ros
+	fire behaviour
+		kitral
+		scott & burg...
