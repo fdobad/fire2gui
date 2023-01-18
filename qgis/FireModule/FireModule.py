@@ -24,17 +24,26 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsMessageLog, Qgis
+from qgis.core import QgsMessageLog, Qgis, QgsProject
+from qgis.gui import QgsMessageBar
+
 
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
 from .FireModule_dialog import FireClassDialog
 import os.path
-
 # interactively
 #from resources import *
 #from FireModule_dialog import FireClassDialog
+
+# Use pdb for debugging
+import pdb
+# also import pyqtRemoveInputHook
+from qgis.PyQt.QtCore import pyqtRemoveInputHook
+# These lines allow you to set a breakpoint in the app
+#pyqtRemoveInputHook()
+#pdb.set_trace()
 
 
 class FireClass:
@@ -178,33 +187,68 @@ class FireClass:
             self.iface.removeToolBarIcon(action)
 
     def tab_callback(self):
-        msg = self.dlg.tabWidget.currentIndex()
-        QgsMessageLog.logMessage('tab_callback\t'+str(msg), "fire2gui", level=Qgis.Info)
+        ci = self.dlg.tabWidget.currentIndex()
+        QgsMessageLog.logMessage('tab_callback\t%s'%(ci), "fire2gui", level=Qgis.Info)
+        self.dlg.bar.pushMessage("tab event", "tab changed to %s"%ci, level=Qgis.Info)
 
     def file_callback(self):
-        msg = self.dlg.mQgsFileWidget.filePath()
-        QgsMessageLog.logMessage('file_callback\t'+str(msg), "fire2gui", level=Qgis.Info)
+        #pyqtRemoveInputHook()
+        #pdb.set_trace()
+        sender = self.dlg.sender()
+        senderName = sender.objectName()
+        filePath = sender.filePath()
+        QgsMessageLog.logMessage('file_callback\t%s\t%s'%(senderName, filePath), "fire2gui", level=Qgis.Info)
+        self.dlg.bar.pushMessage("file picker event", "choosen folder \t%s\t%s"%(senderName, filePath), level=Qgis.Info)
+
+        # logica ui
+        if senderName == 'mQgsFileWidget_input':
+            if os.path.isfile( os.path.join( filePath, 'elevation.asc')):
+                self.dlg.mQgsFileWidget_elevation.setFilePath( os.path.join( filePath, 'elevation.asc'))
 
     def run(self):
         """Run method that performs all the real work"""
+
+        # Get the project instance
+        project = QgsProject.instance()
+        projectDir = project.homePath()
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
             self.dlg = FireClassDialog()
+            #
+            # message level : Info, Warning, Critical or Success
+            # duration : 0=forever, -1=level default 
+            self.dlg.bar = QgsMessageBar()
+            self.dlg.layout().insertRow(0,self.dlg.bar) # at the end: .addRow . see qformlayout
+            self.dlg.bar.pushMessage("I'm FireGui", "Hello World!", level=Qgis.Info, duration=0)
+            #
+            # object.signal.connect(slot)
             # tabs 
             self.dlg.tabWidget.currentChanged.connect(self.tab_callback)
-            # folders
-            self.dlg.mQgsFileWidget.lineEdit().setValue('...Select the folder with instance files') 
-            self.dlg.mQgsFileWidget.fileChanged.connect(self.file_callback)
-            self.dlg.mQgsFileWidget_2.setFilePath(os.getcwd())
-            #self.dlg.mQgsFileWidget.setFilePath(os.getcwd())
+            ## folders
+            #self.dlg.mQgsFileWidget.lineEdit().setValue('...Select the folder with instance files') 
+            self.dlg.mQgsFileWidget_input.setFilePath( projectDir)
+            self.dlg.mQgsFileWidget_input.fileChanged.connect( self.file_callback)
+            self.dlg.mQgsFileWidget_output.setFilePath( projectDir)
+            self.dlg.mQgsFileWidget_output.fileChanged.connect( self.file_callback)
+            ## elevation
+            if os.path.isfile( os.path.join( projectDir, 'elevation.asc')):
+                self.dlg.mQgsFileWidget_elevation.setFilePath( os.path.join( projectDir, 'elevation.asc'))
+
 
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
+
+        if getHappyCase():
+            pass #run c2f
+        else:
+            QgsMessageLog.logMessage('incomplete!', "fire2gui", level=Qgis.Info)
+            self.dlg.bar.pushMessage("I'm FireGui","incomplete", level=Qgis.Info)
+
 
         # See if OK was pressed
         if result:

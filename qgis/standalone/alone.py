@@ -1,11 +1,23 @@
 
+#from PyQt6.QtWidgets import QApplication, QWidget
+from qgis.PyQt.QtWidgets import QDialog, QApplication, QWidget
 
-from qgis.PyQt.QtWidgets import QDialog, QApplication
-from qgis.gui import QgsFileWidget
-
+# create the QApplication
 app = QApplication([])
-new_dialog = QDialog()
-new_dialog.resize(400, 300)
-file_widget = QgsFileWidget(new_dialog)
 
-new_dialog.show()
+# create the main window
+window = QWidget(windowTitle='Hello World')
+window.show()
+
+# start the event loop
+app.exec()
+
+#from qgis.PyQt.QtWidgets import QDialog, QApplication
+#from qgis.gui import QgsFileWidget
+#
+#app = QApplication([])
+#new_dialog = QDialog()
+#new_dialog.resize(400, 300)
+#file_widget = QgsFileWidget(new_dialog)
+#
+#new_dialog.show()

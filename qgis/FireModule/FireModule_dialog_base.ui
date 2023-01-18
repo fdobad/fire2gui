@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
-    <height>450</height>
+    <width>869</width>
+    <height>600</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -23,7 +23,7 @@
    <item row="0" column="0" colspan="2">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -38,7 +38,7 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QgsFileWidget" name="mQgsFileWidget">
+        <widget class="QgsFileWidget" name="mQgsFileWidget_input">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select the folder with instance files (elevation.asc, ...&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
@@ -58,7 +58,7 @@
         </widget>
        </item>
        <item row="2" column="1">
-        <widget class="QgsFileWidget" name="mQgsFileWidget_2">
+        <widget class="QgsFileWidget" name="mQgsFileWidget_output">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select the folder for simulation output files (plots, messages, ...&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
@@ -75,7 +75,7 @@
       </attribute>
       <layout class="QFormLayout" name="formLayout_3">
        <item row="1" column="0">
-        <widget class="QRadioButton" name="radioButton_2">
+        <widget class="QRadioButton" name="radioButton_ignition_random">
          <property name="text">
           <string>Random</string>
          </property>
@@ -163,96 +163,50 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="tab_7">
+      <attribute name="title">
+       <string>Fire</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="tab_6">
+      <attribute name="title">
+       <string>Fuels</string>
+      </attribute>
+     </widget>
      <widget class="QWidget" name="tab_3">
       <attribute name="title">
        <string>Weather</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="8" column="3">
-        <widget class="QgsSpinBox" name="mQgsSpinBox_3">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="value">
-          <number>2</number>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QRadioButton" name="radioButton_4">
+       <item row="7" column="0">
+        <widget class="QRadioButton" name="radioButton_6">
          <property name="text">
-          <string>Constant Wind</string>
+          <string>Random</string>
          </property>
         </widget>
        </item>
-       <item row="4" column="2">
-        <widget class="QSpinBox" name="spinBox_2">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="maximum">
-          <number>69</number>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_8">
+         <property name="text">
+          <string>Variable Wind</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="3">
+       <item row="9" column="3">
         <widget class="QgsSpinBox" name="mQgsSpinBox_2">
          <property name="value">
           <number>60</number>
          </property>
         </widget>
        </item>
-       <item row="0" column="2">
-        <widget class="QLabel" name="label_6">
+       <item row="7" column="2">
+        <widget class="QLabel" name="label_7">
          <property name="text">
-          <string>Weather-Period-Length (min)</string>
+          <string>Drawing from the first n files:</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <spacer name="horizontalSpacer_4">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="7" column="0">
-        <widget class="QRadioButton" name="radioButton_5">
-         <property name="text">
-          <string>In numeric file order</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="2">
-        <widget class="QSpinBox" name="spinBox">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="maximum">
-          <number>359</number>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="3">
-        <widget class="QSlider" name="horizontalSlider">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="3">
+       <item row="2" column="3">
         <widget class="QDial" name="dial">
          <property name="enabled">
           <bool>false</bool>
@@ -274,21 +228,7 @@
          </property>
         </widget>
        </item>
-       <item row="8" column="0">
-        <widget class="QRadioButton" name="radioButton_6">
-         <property name="text">
-          <string>Random</string>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="2">
-        <widget class="QLabel" name="label_7">
-         <property name="text">
-          <string>Drawing from the first n files:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
+       <item row="3" column="0">
         <widget class="QLabel" name="label_5">
          <property name="text">
           <string>Wind Speed (km/h)
@@ -296,7 +236,7 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="2">
+       <item row="4" column="2">
         <spacer name="horizontalSpacer_3">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -309,7 +249,61 @@
          </property>
         </spacer>
        </item>
-       <item row="3" column="0">
+       <item row="7" column="3">
+        <widget class="QgsSpinBox" name="mQgsSpinBox_3">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="value">
+          <number>2</number>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="QSpinBox" name="spinBox">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="maximum">
+          <number>359</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QRadioButton" name="radioButton_4">
+         <property name="text">
+          <string>Constant Wind</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="2">
+        <widget class="QLabel" name="label_9">
+         <property name="text">
+          <string>Weather 1,2,...,N .csv</string>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="2">
+        <widget class="QgsFilterLineEdit" name="mLineEdit_2">
+         <property name="qgisRelation" stdset="0">
+          <string notr="true"/>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="2">
+        <spacer name="horizontalSpacer_6">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="2" column="0">
         <widget class="QLabel" name="label_4">
          <property name="text">
           <string>Wind direction
@@ -317,17 +311,252 @@
          </property>
         </widget>
        </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="label_8">
+       <item row="11" column="2">
+        <widget class="QPushButton" name="pushButton_2">
          <property name="text">
-          <string>Variable Wind</string>
+          <string>Get a weather forecast 
+from current map center</string>
          </property>
         </widget>
        </item>
-       <item row="7" column="2">
-        <widget class="QLabel" name="label_9">
+       <item row="6" column="0">
+        <widget class="QRadioButton" name="radioButton_weather_rows">
          <property name="text">
-          <string>Weather 1,2,...,N .csv</string>
+          <string>In numeric file order</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="3">
+        <widget class="QSlider" name="horizontalSlider">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="2">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>Weather-Period-Length (min)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="0">
+        <widget class="QLabel" name="label_10">
+         <property name="text">
+          <string>openweather.org api key</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="2">
+        <widget class="QSpinBox" name="spinBox_2">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="maximum">
+          <number>69</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_5">
+      <attribute name="title">
+       <string>Elevation</string>
+      </attribute>
+      <layout class="QFormLayout" name="formLayout_4">
+       <item row="0" column="0">
+        <widget class="QRadioButton" name="radioButton_7">
+         <property name="text">
+          <string>Layer</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QgsMapLayerComboBox" name="mMapLayerComboBox_3">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="placeholderText">
+          <string>100x100m dat elevation model</string>
+         </property>
+         <property name="allowEmptyLayer">
+          <bool>true</bool>
+         </property>
+         <property name="showCrs">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QRadioButton" name="radioButton_8">
+         <property name="text">
+          <string>File .asc</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QgsFileWidget" name="mQgsFileWidget_elevation"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QRadioButton" name="radioButton_9">
+         <property name="text">
+          <string>Flat earth!</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <spacer name="horizontalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="4" column="0" colspan="2">
+        <widget class="QPushButton" name="pushButton">
+         <property name="text">
+          <string>Get an elevation layer from current map extent</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_9">
+      <attribute name="title">
+       <string>Simulation</string>
+      </attribute>
+      <layout class="QFormLayout" name="formLayout_5">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_11">
+         <property name="text">
+          <string>--nsims</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QgsSpinBox" name="mQgsSpinBox_nsims">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_12">
+         <property name="text">
+          <string>--seed</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QgsSpinBox" name="mQgsSpinBox_seed">
+         <property name="maximum">
+          <number>1000</number>
+         </property>
+         <property name="value">
+          <number>123</number>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_13">
+         <property name="text">
+          <string>--nthreads</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QgsSpinBox" name="mQgsSpinBox_nthreads">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QgsSpinBox" name="mQgsSpinBox_max_fire_periods">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>1000</number>
+         </property>
+         <property name="value">
+          <number>1000</number>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_14">
+         <property name="text">
+          <string>--max-fire-periods</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_15">
+         <property name="text">
+          <string>--Fire-Period-Length</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QgsSpinBox" name="mQgsSpinBox_Fire_Period_Length">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>3600</number>
+         </property>
+         <property name="value">
+          <number>60</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_8">
+      <attribute name="title">
+       <string>Results?</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="tab_4">
+      <attribute name="title">
+       <string>Page</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="0">
+        <widget class="QgsFilterLineEdit" name="mLineEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>hola</string>
+         </property>
+         <property name="qgisRelation" stdset="0">
+          <string notr="true"/>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QDialogButtonBox" name="buttonBox">
+         <property name="standardButtons">
+          <set>QDialogButtonBox::Abort|QDialogButtonBox::Retry</set>
          </property>
         </widget>
        </item>
@@ -342,6 +571,11 @@
    <class>QgsFileWidget</class>
    <extends>QWidget</extends>
    <header>qgsfilewidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsFilterLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qgsfilterlineedit.h</header>
   </customwidget>
   <customwidget>
    <class>QgsMapLayerComboBox</class>
@@ -545,6 +779,38 @@
     <hint type="destinationlabel">
      <x>395</x>
      <y>416</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_7</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>mMapLayerComboBox_3</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>53</x>
+     <y>119</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>353</x>
+     <y>120</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_8</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>mQgsFileWidget_elevation</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>61</x>
+     <y>207</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>353</x>
+     <y>208</y>
     </hint>
    </hints>
   </connection>
