@@ -71,6 +71,10 @@ pip install nose pb_tool
 - [pyqgis docs](https://www.qgis.org/pyqgis/master/index.html)
 - [developer cookbook](https://docs.qgis.org/latest/en/docs/pyqgis_developer_cookbook/intro.html)
 - [qobject multithreading?](https://github.com/wonder-sk/qgis-mtr-example-plugin/blob/master/plugin.py)
+### qgis threads
+- [cookbook](https://docs.qgis.org/3.22/en/docs/pyqgis_developer_cookbook/tasks.html)
+- [gisops](https://gis-ops.com/qgis-3-plugin-tutorial-background-processing/)
+- [gis.ch](https://www.opengis.ch/2018/06/22/threads-in-pyqgis3/)
 
 ## plugins
 - [tutorial](https://gis-ops.com/qgis-3-plugin-tutorial-plugin-development-reference-guide/)
