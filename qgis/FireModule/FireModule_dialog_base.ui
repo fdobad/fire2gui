@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>869</width>
-    <height>600</height>
+    <height>505</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,9 +19,18 @@
   <property name="windowTitle">
    <string>FireName</string>
   </property>
+  <property name="layoutDirection">
+   <enum>Qt::LeftToRight</enum>
+  </property>
   <layout class="QFormLayout" name="formLayout">
+   <property name="rowWrapPolicy">
+    <enum>QFormLayout::WrapAllRows</enum>
+   </property>
    <item row="0" column="0" colspan="2">
     <widget class="QTabWidget" name="tabWidget">
+     <property name="tabPosition">
+      <enum>QTabWidget::North</enum>
+     </property>
      <property name="currentIndex">
       <number>0</number>
      </property>
@@ -38,7 +47,7 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QgsFileWidget" name="mQgsFileWidget_input">
+        <widget class="QgsFileWidget" name="mQgsFileWidget_InFolder">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select the folder with instance files (elevation.asc, ...&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
@@ -58,7 +67,7 @@
         </widget>
        </item>
        <item row="2" column="1">
-        <widget class="QgsFileWidget" name="mQgsFileWidget_output">
+        <widget class="QgsFileWidget" name="mQgsFileWidget_OutFolder">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select the folder for simulation output files (plots, messages, ...&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
@@ -75,7 +84,7 @@
       </attribute>
       <layout class="QFormLayout" name="formLayout_3">
        <item row="1" column="0">
-        <widget class="QRadioButton" name="radioButton_ignition_random">
+        <widget class="QRadioButton" name="radioButton_IgRandom">
          <property name="text">
           <string>Random</string>
          </property>
@@ -85,14 +94,27 @@
         </widget>
        </item>
        <item row="3" column="0">
-        <widget class="QRadioButton" name="radioButton">
+        <widget class="QRadioButton" name="radioButton_IgPointFile">
          <property name="text">
-          <string>Point</string>
+          <string>Point from Ignitions.csv</string>
          </property>
         </widget>
        </item>
        <item row="3" column="1">
-        <widget class="QgsMapLayerComboBox" name="mMapLayerComboBox">
+        <widget class="QgsFileWidget" name="mQgsFileWidget_Ignitions"/>
+       </item>
+       <item row="5" column="0">
+        <widget class="QRadioButton" name="radioButton_IgPointLayer">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>Point from layer</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <widget class="QgsMapLayerComboBox" name="mMapLayerComboBox_IgPoint">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -104,34 +126,37 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="0">
-        <widget class="QRadioButton" name="radioButton_3">
-         <property name="text">
-          <string>Ignition probability map</string>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="1">
-        <widget class="QgsMapLayerComboBox" name="mMapLayerComboBox_2">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
-        <widget class="QgsSpinBox" name="mQgsSpinBox">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
+       <item row="6" column="0">
         <widget class="QLabel" name="label_3">
          <property name="text">
           <string>Adjacents degree radius</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
+        <widget class="QgsSpinBox" name="mQgsSpinBox_IgRadius">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0">
+        <widget class="QRadioButton" name="radioButton_IgProbMap">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>Ignition probability map</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="1">
+        <widget class="QgsMapLayerComboBox" name="mMapLayerComboBox_IgProbMap">
+         <property name="enabled">
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -148,7 +173,7 @@
          </property>
         </spacer>
        </item>
-       <item row="5" column="0">
+       <item row="8" column="0">
         <spacer name="horizontalSpacer_2">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -179,7 +204,7 @@
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
        <item row="7" column="0">
-        <widget class="QRadioButton" name="radioButton_6">
+        <widget class="QRadioButton" name="radioButton_RandW">
          <property name="text">
           <string>Random</string>
          </property>
@@ -193,7 +218,7 @@
         </widget>
        </item>
        <item row="9" column="3">
-        <widget class="QgsSpinBox" name="mQgsSpinBox_2">
+        <widget class="QgsSpinBox" name="mQgsSpinBox_weather_period_len">
          <property name="value">
           <number>60</number>
          </property>
@@ -207,7 +232,7 @@
         </widget>
        </item>
        <item row="2" column="3">
-        <widget class="QDial" name="dial">
+        <widget class="QDial" name="dial_ConstWD">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -250,7 +275,7 @@
         </spacer>
        </item>
        <item row="7" column="3">
-        <widget class="QgsSpinBox" name="mQgsSpinBox_3">
+        <widget class="QgsSpinBox" name="mQgsSpinBox_nweathers">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -260,7 +285,7 @@
         </widget>
        </item>
        <item row="2" column="2">
-        <widget class="QSpinBox" name="spinBox">
+        <widget class="QSpinBox" name="spinBox_ConstWD">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -270,7 +295,7 @@
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QRadioButton" name="radioButton_4">
+        <widget class="QRadioButton" name="radioButton_ConstW">
          <property name="text">
           <string>Constant Wind</string>
          </property>
@@ -284,7 +309,7 @@
         </widget>
        </item>
        <item row="10" column="2">
-        <widget class="QgsFilterLineEdit" name="mLineEdit_2">
+        <widget class="QgsFilterLineEdit" name="mLineEdit_OpenWeatherApiKey">
          <property name="qgisRelation" stdset="0">
           <string notr="true"/>
          </property>
@@ -312,7 +337,7 @@
         </widget>
        </item>
        <item row="11" column="2">
-        <widget class="QPushButton" name="pushButton_2">
+        <widget class="QPushButton" name="pushButton_getOpenWeatherForecast">
          <property name="text">
           <string>Get a weather forecast 
 from current map center</string>
@@ -330,7 +355,7 @@ from current map center</string>
         </widget>
        </item>
        <item row="3" column="3">
-        <widget class="QSlider" name="horizontalSlider">
+        <widget class="QSlider" name="horizontalSlider_ConstWS">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -354,7 +379,7 @@ from current map center</string>
         </widget>
        </item>
        <item row="3" column="2">
-        <widget class="QSpinBox" name="spinBox_2">
+        <widget class="QSpinBox" name="spinBox_ConstWS">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -371,14 +396,14 @@ from current map center</string>
       </attribute>
       <layout class="QFormLayout" name="formLayout_4">
        <item row="0" column="0">
-        <widget class="QRadioButton" name="radioButton_7">
+        <widget class="QRadioButton" name="radioButton_elevationLayer">
          <property name="text">
           <string>Layer</string>
          </property>
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QgsMapLayerComboBox" name="mMapLayerComboBox_3">
+        <widget class="QgsMapLayerComboBox" name="mMapLayerComboBox_elevation">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -394,7 +419,7 @@ from current map center</string>
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QRadioButton" name="radioButton_8">
+        <widget class="QRadioButton" name="radioButton_elevationFile">
          <property name="text">
           <string>File .asc</string>
          </property>
@@ -407,7 +432,7 @@ from current map center</string>
         <widget class="QgsFileWidget" name="mQgsFileWidget_elevation"/>
        </item>
        <item row="2" column="0">
-        <widget class="QRadioButton" name="radioButton_9">
+        <widget class="QRadioButton" name="radioButton_elevationFlat">
          <property name="text">
           <string>Flat earth!</string>
          </property>
@@ -427,7 +452,7 @@ from current map center</string>
         </spacer>
        </item>
        <item row="4" column="0" colspan="2">
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="pushButton_getElevation">
          <property name="text">
           <string>Get an elevation layer from current map extent</string>
          </property>
@@ -514,6 +539,9 @@ from current map center</string>
        </item>
        <item row="4" column="1">
         <widget class="QgsSpinBox" name="mQgsSpinBox_Fire_Period_Length">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="minimum">
           <number>1</number>
          </property>
@@ -537,28 +565,22 @@ from current map center</string>
        <string>Page</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="0">
-        <widget class="QgsFilterLineEdit" name="mLineEdit">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
+       <item row="1" column="0">
+        <widget class="QPushButton" name="pushButton_Abort">
          <property name="text">
-          <string>hola</string>
-         </property>
-         <property name="qgisRelation" stdset="0">
-          <string notr="true"/>
+          <string>Abort</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QDialogButtonBox" name="buttonBox">
-         <property name="standardButtons">
-          <set>QDialogButtonBox::Abort|QDialogButtonBox::Retry</set>
+       <item row="1" column="1">
+        <widget class="QPushButton" name="pushButton_Run">
+         <property name="text">
+          <string>Run</string>
          </property>
         </widget>
+       </item>
+       <item row="0" column="0" colspan="2">
+        <widget class="QTextBrowser" name="textBrowser"/>
        </item>
       </layout>
      </widget>
@@ -591,9 +613,9 @@ from current map center</string>
  <resources/>
  <connections>
   <connection>
-   <sender>dial</sender>
+   <sender>dial_ConstWD</sender>
    <signal>sliderMoved(int)</signal>
-   <receiver>spinBox</receiver>
+   <receiver>spinBox_ConstWD</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -607,9 +629,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>spinBox</sender>
+   <sender>spinBox_ConstWD</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>dial</receiver>
+   <receiver>dial_ConstWD</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -623,9 +645,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>spinBox_2</sender>
+   <sender>spinBox_ConstWS</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>horizontalSlider</receiver>
+   <receiver>horizontalSlider_ConstWS</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -639,9 +661,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>horizontalSlider</sender>
+   <sender>horizontalSlider_ConstWS</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>spinBox_2</receiver>
+   <receiver>spinBox_ConstWS</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -655,9 +677,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton_6</sender>
+   <sender>radioButton_RandW</sender>
    <signal>toggled(bool)</signal>
-   <receiver>mQgsSpinBox_3</receiver>
+   <receiver>mQgsSpinBox_nweathers</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -671,9 +693,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton_4</sender>
+   <sender>radioButton_ConstW</sender>
    <signal>toggled(bool)</signal>
-   <receiver>dial</receiver>
+   <receiver>dial_ConstWD</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -687,9 +709,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton_4</sender>
+   <sender>radioButton_ConstW</sender>
    <signal>toggled(bool)</signal>
-   <receiver>horizontalSlider</receiver>
+   <receiver>horizontalSlider_ConstWS</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -703,9 +725,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton_4</sender>
+   <sender>radioButton_ConstW</sender>
    <signal>toggled(bool)</signal>
-   <receiver>spinBox</receiver>
+   <receiver>spinBox_ConstWD</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -719,9 +741,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton_4</sender>
+   <sender>radioButton_ConstW</sender>
    <signal>toggled(bool)</signal>
-   <receiver>spinBox_2</receiver>
+   <receiver>spinBox_ConstWS</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -735,9 +757,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton</sender>
+   <sender>radioButton_IgPointLayer</sender>
    <signal>toggled(bool)</signal>
-   <receiver>mMapLayerComboBox</receiver>
+   <receiver>mMapLayerComboBox_IgPoint</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -751,9 +773,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton</sender>
+   <sender>radioButton_IgPointLayer</sender>
    <signal>toggled(bool)</signal>
-   <receiver>mQgsSpinBox</receiver>
+   <receiver>mQgsSpinBox_IgRadius</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -767,9 +789,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton_3</sender>
+   <sender>radioButton_IgProbMap</sender>
    <signal>toggled(bool)</signal>
-   <receiver>mMapLayerComboBox_2</receiver>
+   <receiver>mMapLayerComboBox_IgProbMap</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -783,9 +805,9 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton_7</sender>
+   <sender>radioButton_elevationLayer</sender>
    <signal>toggled(bool)</signal>
-   <receiver>mMapLayerComboBox_3</receiver>
+   <receiver>mMapLayerComboBox_elevation</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -799,7 +821,7 @@ from current map center</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton_8</sender>
+   <sender>radioButton_elevationFile</sender>
    <signal>toggled(bool)</signal>
    <receiver>mQgsFileWidget_elevation</receiver>
    <slot>setEnabled(bool)</slot>
@@ -811,6 +833,22 @@ from current map center</string>
     <hint type="destinationlabel">
      <x>353</x>
      <y>208</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_IgPointFile</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>mQgsSpinBox_IgRadius</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>112</x>
+     <y>203</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>529</x>
+     <y>326</y>
     </hint>
    </hints>
   </connection>
