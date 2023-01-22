@@ -46,6 +46,7 @@ import os.path
 #pdb.set_trace()
 
 #from .C2FSB.Cell2FireQgisTask import Cell2FireTask
+from .Cell2FireQgisTask import *
 from argparse import Namespace
 MESSAGE_CATEGORY = 'cell2fire'
 
@@ -197,6 +198,7 @@ class FireClass:
         self.dlg.bar.pushMessage("tab event", "tab changed to %s"%ci, level = Qgis.Info)
         if ci == 8:
             self.getParams()
+            self.runCell2Fire()
 
     def file_callback(self):
         #pyqtRemoveInputHook()
@@ -293,6 +295,10 @@ class FireClass:
         return Namespace(**self.params)
 
     def runCell2Fire(self):
+        pars = self.getParams()
+        QgsMessageLog.logMessage('params\t%s'%(pars), "fire2gui", level = Qgis.Info)
+        self.task = Cell2FireTask(pars, 'waste cpu long')
+        QgsApplication.taskManager().addTask(self.task)
         pass
         '''
         task = Cell2FireTask( self.getParams(), 'waste cpu long')

@@ -11,10 +11,10 @@ MESSAGE_CATEGORY = 'Cell2Fire'
 import warnings
 warnings.filterwarnings("ignore")
 # Inputs and environment generator
-#from Cell2Fire.ParseInputs import ParseInputs
-from Cell2FireC import *
-#from Cell2Fire.Stats import *
-#from Cell2Fire.Heuristics import *
+#from .ParseInputs import ParseInputs
+from .Cell2FireC_class import *
+#from .Stats import *
+#from .Heuristics import *
 
 class Cell2FireTask(QgsTask):
     """This shows how to subclass QgsTask"""
@@ -22,16 +22,25 @@ class Cell2FireTask(QgsTask):
         super().__init__(description, QgsTask.CanCancel)
         self.exception = None
         self.args = args
-
+        self.description = 'foo'
+        QgsMessageLog.logMessage('Init task "{}"'.format(
+                                     self.description),
+                                 MESSAGE_CATEGORY, Qgis.Info)
+        self.path = os.path.dirname(os.path.abspath(__file__))
+        QgsMessageLog.logMessage('Path:' + self.path,
+                                 MESSAGE_CATEGORY, Qgis.Info)
     def run(self):
         """Here you implement your heavy lifting.
         Should periodically test for isCanceled() to gracefully abort.
         This method MUST return True or False.
         Raising exceptions will crash QGIS, so we handle them internally and raise them in self.finished
         """
+        QgsMessageLog.logMessage('asdasdasd "{}"'.format(
+                                     self.description),
+                                 MESSAGE_CATEGORY, Qgis.Info)
         self.setProgress(0.0)
         QgsMessageLog.logMessage('Started task "{}"'.format(
-                                     self.description()),
+                                     self.description),
                                  MESSAGE_CATEGORY, Qgis.Info)
         self.setProgress(25.0)
         if self.isCanceled():
@@ -57,6 +66,9 @@ class Cell2FireTask(QgsTask):
         return True
 
     def finished(self, result):
+        QgsMessageLog.logMessage(
+                'finished',
+                MESSAGE_CATEGORY, Qgis.Success)
         """
         This function is automatically called when the task has
         completed (successfully or not).
@@ -69,7 +81,7 @@ class Cell2FireTask(QgsTask):
         if result:
             QgsMessageLog.logMessage(
                 'Task "{name}" completed'.format(
-                name=self.description()),
+                name=self.description),
                 MESSAGE_CATEGORY, Qgis.Success)
         else:
             if self.exception is None:
@@ -77,11 +89,11 @@ class Cell2FireTask(QgsTask):
                     'Task "{name}" not successful but without '\
                     'exception (probably the task was manually '\
                     'canceled by the user)'.format(
-                    name=self.description()),
+                    name=self.description),
                     MESSAGE_CATEGORY, Qgis.Warning)
             else:
                 QgsMessageLog.logMessage('Task "{name}" Exception: {exception}'.format(
-                        name=self.description(),
+                        name=self.description,
                         exception=self.exception),
                         MESSAGE_CATEGORY, Qgis.Critical)
                 raise self.exception
@@ -89,7 +101,7 @@ class Cell2FireTask(QgsTask):
     def cancel(self):
         QgsMessageLog.logMessage(
             'Task "{name}" was canceled'.format(
-            name=self.description()),
+            name=self.description),
             MESSAGE_CATEGORY, Qgis.Info)
         super().cancel()
 
