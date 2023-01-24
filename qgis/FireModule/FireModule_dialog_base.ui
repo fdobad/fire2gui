@@ -101,7 +101,11 @@
         </widget>
        </item>
        <item row="3" column="1">
-        <widget class="QgsFileWidget" name="mQgsFileWidget_Ignitions"/>
+        <widget class="QgsFileWidget" name="mQgsFileWidget_Ignitions">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+        </widget>
        </item>
        <item row="5" column="0">
         <widget class="QRadioButton" name="radioButton_IgPointLayer">
@@ -424,17 +428,24 @@ from current map center</string>
           <string>File .asc</string>
          </property>
          <property name="checked">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QgsFileWidget" name="mQgsFileWidget_elevation"/>
+        <widget class="QgsFileWidget" name="mQgsFileWidget_elevation">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+        </widget>
        </item>
        <item row="2" column="0">
         <widget class="QRadioButton" name="radioButton_elevationFlat">
          <property name="text">
           <string>Flat earth!</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -849,6 +860,22 @@ from current map center</string>
     <hint type="destinationlabel">
      <x>529</x>
      <y>326</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_IgPointFile</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>mQgsFileWidget_Ignitions</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>112</x>
+     <y>203</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>529</x>
+     <y>204</y>
     </hint>
    </hints>
   </connection>

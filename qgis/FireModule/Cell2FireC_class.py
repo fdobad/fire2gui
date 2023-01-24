@@ -21,6 +21,8 @@ from .utils.Heuristics import *
 #r = p.find("'", l+1)
 cell2fire_path = str(os.path.dirname(os.path.abspath(__file__))) #p[l+1:r]
 
+from platform import system
+
 class Cell2FireC:
     # Constructor and initial run
     def __init__(self, args):
@@ -55,7 +57,8 @@ class Cell2FireC:
     def run(self):
         # Parse args for calling C++ via subprocess        
         # old: execArray=[os.path.join(os.getcwd(),'Cell2FireC/Cell2Fire'), 
-        execArray=[os.path.join(cell2fire_path,'Cell2Fire.exe'), 
+        exe='.exe' if system()=='Windows' else ''
+        execArray=[os.path.join(cell2fire_path,'Cell2Fire'+exe), 
                    '--input-instance-folder', self.args.InFolder,
                    '--output-folder', self.args.OutFolder if (self.args.OutFolder is not None) else '',
                    '--ignitions' if (self.args.ignitions) else '',
@@ -81,7 +84,7 @@ class Cell2FireC:
                 os.makedirs(self.args.OutFolder)
             LogName = os.path.join(self.args.OutFolder, "LogFile.txt")
         else:
-            LogName = os.path.join(self.args.InFolder, "LogFile.txt")   
+            LogName = os.path.join(self.args.InFolder, "LogFile.txt")
 
         # Perform the call
         with open(LogName, 'w') as output:
@@ -89,16 +92,17 @@ class Cell2FireC:
             proc.communicate()
         return_code = proc.wait()
         if (return_code != 0):
-           raise RuntimeError(f'C++ returned {return_code}.\nTry looking at {LogName}.') 
-        
+           raise RuntimeError(f'C++ returned {return_code}.\nTry looking at {LogName}.')
+
         # End of the replications
         print("End of Cell2FireC execution...")
-        
-    
+
+
     # Run C++ Sim with heuristic treatment 
     def run_Heur(self, OutFolder, HarvestPlanFile):
         # Parse args for calling C++ via subprocess        
-        execArray=[os.path.join(cell2fire_path,'Cell2Fire.exe'), 
+        exe='.exe' if system()=='Windows' else ''
+        execArray=[os.path.join(cell2fire_path,'Cell2Fire'+exe),
                    '--input-instance-folder', self.args.InFolder,
                    '--output-folder', OutFolder if (OutFolder is not None) else '',
                    '--ignitions' if (self.args.ignitions) else '',

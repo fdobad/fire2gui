@@ -1,11 +1,9 @@
-import random
-from time import sleep
-
 from qgis.core import (
     QgsApplication, QgsTask, QgsMessageLog, Qgis
     )
 
 MESSAGE_CATEGORY = 'Cell2Fire'
+
 
 # No Warnings
 import warnings
@@ -52,14 +50,14 @@ class Cell2FireTask(QgsTask):
         if self.isCanceled():
             return False
         # Postprocessing: Plots Stats
-        if args.stats:
+        if self.args.stats:
             QgsMessageLog.logMessage('Generating Statistics', MESSAGE_CATEGORY, Qgis.Info)
             env.stats()
         #
         self.setProgress(75.0)
         if self.isCanceled():
             return False
-        if args.heuristic != -1:
+        if self.args.heuristic != -1:
             QgsMessageLog.logMessage('Generating outputs for heuristics', MESSAGE_CATEGORY, Qgis.Info)
             env.heur()
         self.setProgress(100.0)
