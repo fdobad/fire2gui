@@ -1,5 +1,6 @@
 <RCC>
-    <qresource prefix="/plugins/FireModule" >
-        <file>icon.png</file>
-    </qresource>
+  <qresource prefix="/plugins/FireModule">
+    <file>Fire.png</file>
+    <file>icon.png</file>
+  </qresource>
 </RCC>

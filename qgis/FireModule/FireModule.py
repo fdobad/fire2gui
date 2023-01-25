@@ -200,9 +200,8 @@ class FireClass:
         ci = self.dlg.tabWidget.currentIndex()
         QgsMessageLog.logMessage('tab_callback\t%s'%(ci), MESSAGE_CATEGORY, level = Qgis.Info)
         self.dlg.bar.pushMessage("tab event", "tab changed to %s"%ci, level = Qgis.Info)
-        if ci == 8:
+        if ci == 9:
             self.getParams()
-            self.runCell2Fire()
 
     def file_callback(self):
         #pyqtRemoveInputHook()
@@ -235,14 +234,16 @@ class FireClass:
         self.pars = pickle.load('pars.p')
         '''
         self.args['InFolder'] = self.dlg.mQgsFileWidget_InFolder.filePath()
+        if self.args['InFolder'][-1] != os.sep:
+            self.args['InFolder'] = self.args['InFolder'] + os.sep
         self.args['OutFolder'] = self.dlg.mQgsFileWidget_OutFolder.filePath()
         self.args['sim_years'] = 1
         self.args['nsims'] = self.dlg.mQgsSpinBox_nsims.value()
         self.args['seed'] = self.dlg.mQgsSpinBox_seed.value()
         self.args['nthreads'] = self.dlg.mQgsSpinBox_nthreads.value()
         self.args['max_fire_periods'] = self.dlg.mQgsSpinBox_max_fire_periods.value()
-        self.args['gridsStep'] = 60
-        self.args['gridsFreq'] = -1
+        self.args['gridsStep'] = self.dlg.mQgsSpinBox_gridsStep.value()
+        self.args['gridsFreq'] = self.dlg.mQgsSpinBox_gridsFreq.value()
         self.args['heuristic'] = -1
         self.args['messages_path'] = None
         self.args['GASelection'] = False
@@ -265,9 +266,9 @@ class FireClass:
         elif self.dlg.radioButton_RandW.isChecked():
             self.args['WeatherOpt'] = 'random'
             self.args['nweathers'] = self.dlg.mQgsSpinBox_nweathers.value()
-        self.args['spreadPlots'] = False
-        self.args['finalGrid'] = False
-        self.args['verbose'] = False
+        self.args['spreadPlots'] = self.dlg.checkBox_spreadPlots.isChecked() #False
+        self.args['finalGrid'] = self.dlg.checkBox_finalGrid.isChecked() #False
+        self.args['verbose'] = self.dlg.checkBox_verbose.isChecked() #False
         if self.dlg.radioButton_IgRandom.isChecked():
             self.args['ignitions'] = False
             self.args['IgRadius'] = 0
@@ -275,43 +276,43 @@ class FireClass:
             self.args['ignitions'] = True
             self.args['IgRadius'] = self.dlg.mQgsSpinBox_IgRadius.value()
         elif self.dlg.radioButton_IgPointLayer.isChecked():
-            QgsMessageLog.logMessage('NotImplemented', MESSAGE_CATEGORY, level = Qgis.Warning)
+            QgsMessageLog.logMessage('IgPointLayer NotImplemented', MESSAGE_CATEGORY, level = Qgis.Warning)
             # todo layer to csv ?
             #self.args['IgRadius'] = self.dlg.mQgsSpinBox_IgRadius.value()
         else:
-            QgsMessageLog.logMessage('WTF!', MESSAGE_CATEGORY, level = Qgis.Error)
-        self.args['grids'] = False
-        self.args['plots'] = False
-        self.args['allPlots'] = True #!
-        self.args['combine'] = False
-        self.args['no_output'] = False
-        self.args['input_gendata'] = False
-        self.args['OutMessages'] = False
-        self.args['OutBehavior'] = False
-        self.args['PromTuning'] = False
-        self.args['input_trajectories'] = False
-        self.args['stats'] = False
-        self.args['Geotiffs'] = False
-        self.args['tCorrected'] = False
-        self.args['onlyProcessing'] = False
-        self.args['BBO'] = False
-        self.args['cros'] = False
+            QgsMessageLog.logMessage('WTF! line 283', MESSAGE_CATEGORY, level = Qgis.Critical)
+        self.args['grids'] = self.dlg.checkBox_grids.isChecked() #False
+        self.args['plots'] = self.dlg.checkBox_plots.isChecked() #False
+        self.args['allPlots'] = self.dlg.checkBox_allPlots.isChecked() #False
+        self.args['combine'] = self.dlg.checkBox_combine.isChecked() #False
+        self.args['no_output'] = self.dlg.checkBox_no_output.isChecked() #False
+        self.args['input_gendata'] = self.dlg.checkBox_input_gendata.isChecked() #False
+        self.args['OutMessages'] = self.dlg.checkBox_OutMessages.isChecked() #False
+        self.args['OutBehavior'] = self.dlg.checkBox_OutBehavior.isChecked() #False
+        self.args['PromTuning'] = self.dlg.checkBox_PromTuning.isChecked() #False
+        self.args['input_trajectories'] = self.dlg.checkBox_input_trajectories.isChecked() #False
+        self.args['stats'] = self.dlg.checkBox_stats.isChecked() #False
+        self.args['Geotiffs'] = self.dlg.checkBox_Geotiffs.isChecked() #False
+        self.args['tCorrected'] = self.dlg.checkBox_tCorrected.isChecked() #False
+        self.args['onlyProcessing'] = self.dlg.checkBox_onlyProcessing.isChecked() #False
+        self.args['BBO'] = self.dlg.checkBox_BBO.isChecked() #False
+        self.args['cros'] = self.dlg.checkBox_cros.isChecked() #False
         self.args['fdemand'] = False
-        self.args['pdfOutputs'] = False
-        self.args['input_PeriodLen'] = 60
-        self.args['weather_period_len'] = 60
-        self.args['ROS_Threshold'] = 0.1
-        self.args['HFI_Threshold'] = 0.1
-        self.args['ROS_CV'] = 0.0
-        self.args['HFactor'] = 1.0
-        self.args['FFactor'] = 1.0
-        self.args['BFactor'] = 1.0
-        self.args['EFactor'] = 1.0
-        self.args['BurningLen'] = -1.0
-        self.args['ROS10Factor'] = 3.34
-        self.args['CCFFactor'] = 0.0
-        self.args['CBDFactor'] = 0.0
-
+        self.args['pdfOutputs'] = self.dlg.checkBox_pdfOutputs.isChecked() #False
+        self.args['input_PeriodLen'] = self.dlg.mQgsSpinBox_input_PeriodLen.value() #60
+        self.args['weather_period_len'] = self.dlg.mQgsSpinBox_weather_period_len.value() #60
+        self.args['ROS_Threshold'] = self.dlg.mQgsDoubleSpinBox_ROS_Threshold.value() #0.1
+        self.args['HFI_Threshold'] = self.dlg.mQgsDoubleSpinBox_HFI_Threshold.value() #0.1
+        self.args['ROS_CV'] = self.dlg.mQgsDoubleSpinBox_ROS_CV.value() #0.0
+        self.args['HFactor'] = self.dlg.mQgsDoubleSpinBox_HFactor.value() #1.0
+        self.args['FFactor'] = self.dlg.mQgsDoubleSpinBox_FFactor.value() #1.0
+        self.args['BFactor'] = self.dlg.mQgsDoubleSpinBox_BFactor.value() #1.0
+        self.args['EFactor'] = self.dlg.mQgsDoubleSpinBox_EFactor.value() #1.0
+        self.args['BurningLen'] = self.dlg.mQgsDoubleSpinBox_BurningLen.value() #-1.0
+        self.args['ROS10Factor'] = self.dlg.mQgsDoubleSpinBox_ROS10Factor.value() #3.34
+        self.args['CCFFactor'] = self.dlg.mQgsDoubleSpinBox_CCFFactor.value() #0.0
+        self.args['CBDFactor'] = self.dlg.mQgsDoubleSpinBox_CBDFactor.value() #0.0
+        # todo : cmd better logic (e.g. if cros is false don't put CCFFactor)
         cmd=''
         for k,v in self.args.items():
             if isinstance(self.args[k], bool):
@@ -323,30 +324,25 @@ class FireClass:
                 pass
             else:
                 cmd += self.pars[k]['optstr'] + ' ' + str(self.args[k]) + ' '
-
-        QgsMessageLog.logMessage('args\t%s'%(self.args), MESSAGE_CATEGORY, level = Qgis.Info)
-        self.dlg.textBrowser.setText('args\t%s\n\npython main.py %s'%(self.args,cmd))
-        return Namespace(**self.args)
+        #
+        ns = Namespace(**self.args)
+        QgsMessageLog.logMessage('args dictionary\t%s'%(self.args), MESSAGE_CATEGORY, level = Qgis.Info)
+        QgsMessageLog.logMessage('args Namespace\t%s'%(ns), MESSAGE_CATEGORY, level = Qgis.Info)
+        QgsMessageLog.logMessage('args cmd\tpython main.py %s'%(cmd), MESSAGE_CATEGORY, level = Qgis.Info)
+        self.dlg.textBrowser.setText('python main.py %s\n\n%s'%(cmd,ns))
+        return ns
 
     def runCell2Fire(self):
-        pars = self.getParams()
-        QgsMessageLog.logMessage('args\t%s'%(pars), MESSAGE_CATEGORY, level = Qgis.Info)
-        self.task = Cell2FireTask(pars, 'waste cpu long')
+        argsNs = self.getParams()
+        fn = os.path.basename( QgsProject.instance().fileName())
+        self.task = Cell2FireTask(argsNs , 'running '+fn)
         QgsApplication.taskManager().addTask(self.task)
-        pass
-        '''
-        task = Cell2FireTask( self.getParams(), 'waste cpu long')
-        QgsApplication.taskManager().addTask(task)
-        python main.py --input-instance-folder ../data/Sub40x40/ --output-folder ../../results/Sub40x40 --ignitions --sim-years 1 --nsims 5 --finalGrid --weather rows --nweathers 1 --Fire-Period-Length 1.0 --output-messages --ROS-CV 0.0 --seed 123 --stats --allPlots --IgnitionRad 5 --grids --combine
-        '''
 
     def run(self):
         """Run method that performs all the real work"""
-
         # Get the project instance
         project = QgsProject.instance()
         projectDir = project.homePath()
-
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
@@ -354,75 +350,34 @@ class FireClass:
             self.dlg = FireClassDialog()
             #
             # message level : Info, Warning, Critical or Success
-            # duration : 0=forever, -1=level default 
+            # duration : 0=forever, -1=level default
             self.dlg.bar = QgsMessageBar()
             self.dlg.layout().insertRow(0,self.dlg.bar) # at the end: .addRow . see qformlayout
             self.dlg.bar.pushMessage("I'm FireGui", "Hello World!", level = Qgis.Info, duration = 0)
             #
             # object.signal.connect(slot)
-            # tabs 
+            # tabs
             self.dlg.tabWidget.currentChanged.connect(self.tab_callback)
-            ## folders
-            #self.dlg.mQgsFileWidget.lineEdit().setValue('...Select the folder with instance files') 
+            # folders
+            #self.dlg.mQgsFileWidget.lineEdit().setValue('...Select the folder with instance files')
             self.dlg.mQgsFileWidget_InFolder.setFilePath( '/home/fdo/source/C2FSB/data/Hom_Fuel_101_40x40/')
             #self.dlg.mQgsFileWidget_InFolder.setFilePath( projectDir)
             self.dlg.mQgsFileWidget_InFolder.fileChanged.connect( self.file_callback)
             self.dlg.mQgsFileWidget_OutFolder.setFilePath( projectDir)
             self.dlg.mQgsFileWidget_OutFolder.fileChanged.connect( self.file_callback)
-            ## elevation
+            # elevation
             if os.path.isfile( os.path.join( projectDir, 'elevation.asc')):
                 self.dlg.mQgsFileWidget_elevation.setFilePath( os.path.join( projectDir, 'elevation.asc'))
-
-
+            # run
+            self.dlg.pushButton_Run.clicked.connect(self.runCell2Fire)
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
-
-        self.getParams()
-
-        #task = Cell2FireTask(self.args,'Run!')
-        #QgsApplication.taskManager().addTask(task)
-
-
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
-            pass
-'''
-    def pushButton_callback(self):
-        #self.bar.pushMessage("accepted", "Hello World", level = Qgis.Info, duration = 3)
-        QgsMessageLog.logMessage("pushButton_callback", MESSAGE_CATEGORY, level = Qgis.Info)
-
-    def checkBox_callback(self):
-        #self.bar.pushMessage("accepted", "Hello World", level = Qgis.Info, duration = 3)
-        QgsMessageLog.logMessage("checkBox_callback"+str(self.dlg.checkBox.isChecked()), MESSAGE_CATEGORY, level = Qgis.Info)
-
-    def radioButtonC1_callback(self):
-        #self.bar.pushMessage("accepted", "Hello World", level = Qgis.Info, duration = 3)
-        isC = self.dlg.radioButtonC1.isChecked()
-        isE = self.dlg.radioButtonC1.isEnabled()
-        pW = str(self.dlg.radioButtonC1.parentWidget())
-        QgsMessageLog.logMessage("radioButton_callback \t checked %s \t enabled %s parent %s"%(isC,isE,pW), MESSAGE_CATEGORY, level = Qgis.Info)
-
-    def radioButtonC2_callback(self):
-        #self.bar.pushMessage("accepted", "Hello World", level = Qgis.Info, duration = 3)
-        isC = self.dlg.radioButtonC2.isChecked()
-        isE = self.dlg.radioButtonC2.isEnabled()
-        pW = str(self.dlg.radioButtonC2.parentWidget())
-        QgsMessageLog.logMessage("radioButton_callback \t checked %s \t enabled %s parent %s"%(isC,isE,pW), MESSAGE_CATEGORY, level = Qgis.Info)
-
-    def radioButtonR_callback(self):
-        #self.bar.pushMessage("accepted", "Hello World", level = Qgis.Info, duration = 3)
-        isC = self.dlg.radioButtonR.isChecked()
-        isE = self.dlg.radioButtonR.isEnabled()
-        pW = str(self.dlg.radioButtonR.parentWidget())
-        QgsMessageLog.logMessage("radioButton_callback \t checked %s \t enabled %s parent %s"%(isC,isE,pW), MESSAGE_CATEGORY, level = Qgis.Info)
-            self.dlg.pushButton.clicked.connect(self.pushButton_callback)
-            self.dlg.checkBox.stateChanged.connect(self.checkBox_callback)
-            self.dlg.radioButtonR.toggled.connect(self.radioButtonR_callback)
-            self.dlg.radioButtonC1.toggled.connect(self.radioButtonC1_callback)
-            self.dlg.radioButtonC2.toggled.connect(self.radioButtonC2_callback)
-
-'''
+            QgsMessageLog.logMessage('result True', MESSAGE_CATEGORY, level = Qgis.Info)
+        else:
+            QgsMessageLog.logMessage('result False', MESSAGE_CATEGORY, level = Qgis.Info)

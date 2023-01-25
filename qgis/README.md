@@ -2,7 +2,7 @@ __qGIS python development__
 
 # What's here
 ```
-firemodule/                 :   plug in builder widget dialog based
+FireModule/                 :   plug in builder widget dialog based
 minimal/                    :   qgis-minimal-plugin based 
 ProcessingScriptExample/    :   Processing > ToolBox > Scripts > Open/Add... example
 QgisRequests/               :   qgis web-api requests 
@@ -11,15 +11,37 @@ standalone/                 :   app that uses qgis but not qgis desktop
 tmp/                        :   dev space
 ```
 
-# testing
+# Troubleshoot
+## Added a resource now plugin is broken!
+If the plugin won't start after adding a resource with `No module named 'resources_rc'`.
+Delete the line in between 
+```
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+```
+Ref: [broken plugin](https://gis.stackexchange.com/questions/271848/the-plug-in-is-broken-no-module-named-resources)
+
+# Testing
 ## run QGIS Desktop
 Run qgis from a terminal in the provided folder
 ```
+# activate a virtual environment with system-packages enabled and Cell2Fire requirements installed
+$ source venv/bin/activate 
 $ cd fire2gui/qgis/qgisUserFolder/
 $ qgis project.qgz
 ```
 
 ## minimal manual install
+```
+# compile resources if new icons added
+pyrcc5 -o resources.py resources.qrc
+# symlink the plugin
+ln -s myplugin/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins
+```
+
+# Install 
+## minimal plugin template
 ```
 <plugin-folder>
 linux : ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins
@@ -34,7 +56,7 @@ $ ln -s path/to/minimal/__init__.py .
 (mklink replaces ln -s in windows)
 ```
 
-## first install 
+## qGIS Desktop first install 
 - `./deploy_linux.sh` to remove and re-symlink the plugin directory  
 - Menu > Plugins > Manage ... > enable plugins  
 - type "fire.."  
@@ -57,8 +79,6 @@ sudo apt install gdal-bin python3-gdal
 # for using plugin builder
 pip install nose pb_tool
 ```
-
-# paths
 ## debian default install
 ```
 ~/.local/share/QGIS/QGIS3/profiles/default/python/  
@@ -80,6 +100,8 @@ pip install nose pb_tool
 - [tutorial](https://gis-ops.com/qgis-3-plugin-tutorial-plugin-development-reference-guide/)
 - [minimal plugin repo](https://github.com/wonder-sk/qgis-minimal-plugin)
 - [plugin debugger](https://github.com/wonder-sk/qgis-first-aid-plugin)
+- [videoTutorialPluginBuilder](https://opensourceoptions.com/lesson/build-and-deploy-a-plugin-with-plugin-builder-and-pb_tool/)
+- [pb_tools build tools](https://github.com/g-sherman/plugin_build_tool)
 - [homepage](https://plugins.qgis.org/)
 - [no binaries!!](https://plugins.qgis.org/publish/)
 - [windows python packages?](https://landscapearchaeology.org/2018/installing-python-packages-in-qgis-3-for-windows/)

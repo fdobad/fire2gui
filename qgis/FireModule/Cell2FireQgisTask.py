@@ -4,7 +4,6 @@ from qgis.core import (
 
 MESSAGE_CATEGORY = 'Cell2Fire'
 
-
 # No Warnings
 import warnings
 warnings.filterwarnings("ignore")
@@ -14,39 +13,47 @@ from .Cell2FireC_class import *
 #from .Stats import *
 #from .Heuristics import *
 
+import sys, os
+# Disable
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
+
 class Cell2FireTask(QgsTask):
     """This shows how to subclass QgsTask"""
     def __init__(self, args, description):
         super().__init__(description, QgsTask.CanCancel)
         self.exception = None
         self.args = args
-        self.description = 'foo'
-        QgsMessageLog.logMessage('Init task "{}"'.format(
+        self.description = description
+        QgsMessageLog.logMessage('__init__ task "{}"'.format(
                                      self.description),
                                  MESSAGE_CATEGORY, Qgis.Info)
         self.path = os.path.dirname(os.path.abspath(__file__))
         QgsMessageLog.logMessage('Path:' + self.path,
                                  MESSAGE_CATEGORY, Qgis.Info)
+
     def run(self):
         """Here you implement your heavy lifting.
         Should periodically test for isCanceled() to gracefully abort.
         This method MUST return True or False.
         Raising exceptions will crash QGIS, so we handle them internally and raise them in self.finished
         """
-        QgsMessageLog.logMessage('asdasdasd "{}"'.format(
-                                     self.description),
-                                 MESSAGE_CATEGORY, Qgis.Info)
+        blockPrint()
         self.setProgress(0.0)
         QgsMessageLog.logMessage('Started task "{}"'.format(
                                      self.description),
                                  MESSAGE_CATEGORY, Qgis.Info)
-        self.setProgress(25.0)
         if self.isCanceled():
             return False
-        QgsMessageLog.logMessage('C++ init and run', MESSAGE_CATEGORY, Qgis.Info)
+        QgsMessageLog.logMessage('C++ init', MESSAGE_CATEGORY, Qgis.Info)
         env = Cell2FireC(self.args)
+        QgsMessageLog.logMessage('C++ ran', MESSAGE_CATEGORY, Qgis.Info)
         #
-        self.setProgress(50.0)
+        self.setProgress(33.0)
         if self.isCanceled():
             return False
         # Postprocessing: Plots Stats
@@ -54,7 +61,7 @@ class Cell2FireTask(QgsTask):
             QgsMessageLog.logMessage('Generating Statistics', MESSAGE_CATEGORY, Qgis.Info)
             env.stats()
         #
-        self.setProgress(75.0)
+        self.setProgress(66.0)
         if self.isCanceled():
             return False
         if self.args.heuristic != -1:
@@ -95,6 +102,7 @@ class Cell2FireTask(QgsTask):
                         exception=self.exception),
                         MESSAGE_CATEGORY, Qgis.Critical)
                 raise self.exception
+        enablePrint()
 
     def cancel(self):
         QgsMessageLog.logMessage(
