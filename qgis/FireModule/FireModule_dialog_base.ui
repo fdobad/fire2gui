@@ -312,7 +312,7 @@ if HFI is not above (Kw/m)</string>
           <string>--ROS-CV</string>
          </property>
          <property name="singleStep">
-          <double>0.030000000000000</double>
+          <double>0.020000000000000</double>
          </property>
         </widget>
        </item>
@@ -376,12 +376,18 @@ if HFI is not above (Kw/m)</string>
             <property name="toolTip">
              <string>CCF Crown Fire factor</string>
             </property>
+            <property name="singleStep">
+             <double>0.020000000000000</double>
+            </property>
            </widget>
           </item>
           <item row="0" column="1">
            <widget class="QgsDoubleSpinBox" name="mQgsDoubleSpinBox_ROS10Factor">
             <property name="toolTip">
              <string>FM10 Crown Fire factor</string>
+            </property>
+            <property name="singleStep">
+             <double>0.020000000000000</double>
             </property>
             <property name="stepType">
              <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
@@ -435,6 +441,9 @@ if HFI is not above (Kw/m)</string>
             <property name="toolTip">
              <string>CBD Crown Fire factor</string>
             </property>
+            <property name="singleStep">
+             <double>0.020000000000000</double>
+            </property>
            </widget>
           </item>
          </layout>
@@ -459,7 +468,7 @@ if HFI is not above (Kw/m)</string>
           <string>--ROS-Threshold</string>
          </property>
          <property name="singleStep">
-          <double>0.100000000000000</double>
+          <double>0.020000000000000</double>
          </property>
          <property name="value">
           <double>0.100000000000000</double>
@@ -517,6 +526,9 @@ if the Head ROS is not above (m/min)</string>
             <property name="toolTip">
              <string>--FFactor</string>
             </property>
+            <property name="singleStep">
+             <double>0.020000000000000</double>
+            </property>
             <property name="value">
              <double>1.000000000000000</double>
             </property>
@@ -540,6 +552,9 @@ if the Head ROS is not above (m/min)</string>
             <property name="toolTip">
              <string>--BFactor</string>
             </property>
+            <property name="singleStep">
+             <double>0.020000000000000</double>
+            </property>
             <property name="value">
              <double>1.000000000000000</double>
             </property>
@@ -549,6 +564,9 @@ if the Head ROS is not above (m/min)</string>
            <widget class="QgsDoubleSpinBox" name="mQgsDoubleSpinBox_HFactor">
             <property name="toolTip">
              <string>--HFactor</string>
+            </property>
+            <property name="singleStep">
+             <double>0.020000000000000</double>
             </property>
             <property name="value">
              <double>1.000000000000000</double>
@@ -573,6 +591,9 @@ if the Head ROS is not above (m/min)</string>
             <property name="toolTip">
              <string>--EFactor</string>
             </property>
+            <property name="singleStep">
+             <double>0.020000000000000</double>
+            </property>
             <property name="value">
              <double>1.000000000000000</double>
             </property>
@@ -588,6 +609,9 @@ if the Head ROS is not above (m/min)</string>
          </property>
          <property name="minimum">
           <double>0.100000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.020000000000000</double>
          </property>
          <property name="value">
           <double>0.100000000000000</double>
@@ -1489,10 +1513,40 @@ from current map center</string>
        <string>Run</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_2">
-       <item row="3" column="0">
+       <item row="2" column="0" colspan="2">
+        <widget class="QCheckBox" name="checkBox_clipboard">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Copy generated command line to system clipboard</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QPushButton" name="pushButton_Run">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Run</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>:/plugins/FireModule/Fire.png</normaloff>:/plugins/FireModule/Fire.png</iconset>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
         <widget class="QPushButton" name="pushButton_Abort">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -1505,36 +1559,6 @@ from current map center</string>
          </property>
          <property name="text">
           <string>Abort</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" colspan="2">
-        <widget class="QCheckBox" name="checkBox_clipboard">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Copy generated command line to system clipboard</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QPushButton" name="pushButton_Run">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Run</string>
-         </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>:/plugins/FireModule/Fire.png</normaloff>:/plugins/FireModule/Fire.png</iconset>
          </property>
         </widget>
        </item>
@@ -1556,7 +1580,20 @@ from current map center</string>
          <property name="sizeHint" stdset="0">
           <size>
            <width>40</width>
-           <height>20</height>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="3" column="0" colspan="2">
+        <spacer name="horizontalSpacer_11">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>40</height>
           </size>
          </property>
         </spacer>

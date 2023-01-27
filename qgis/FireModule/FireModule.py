@@ -47,6 +47,7 @@ from argparse import Namespace
 import pickle
 from datetime import datetime
 from pandas import DataFrame
+import pyperclip
 
 MESSAGE_CATEGORY = 'Cell2Fire'
 
@@ -393,7 +394,7 @@ class FireClass:
         self.args['CCFFactor'] = self.dlg.mQgsDoubleSpinBox_CCFFactor.value() #0.0
         self.args['CBDFactor'] = self.dlg.mQgsDoubleSpinBox_CBDFactor.value() #0.0
         # todo : cmd better logic (e.g. if cros is false don't put CCFFactor)
-        cmd=''
+        cmd='python main.py '
         for k,v in self.args.items():
             if isinstance(self.args[k], bool):
                 if self.args[k]:
@@ -408,8 +409,11 @@ class FireClass:
         ns = Namespace(**self.args)
         QgsMessageLog.logMessage('args dictionary\t%s'%(self.args), MESSAGE_CATEGORY, level = Qgis.Info)
         QgsMessageLog.logMessage('args Namespace\t%s'%(ns), MESSAGE_CATEGORY, level = Qgis.Info)
-        QgsMessageLog.logMessage('args cmd\tpython main.py %s'%(cmd), MESSAGE_CATEGORY, level = Qgis.Info)
+        QgsMessageLog.logMessage('args cmd\t%s'%(cmd), MESSAGE_CATEGORY, level = Qgis.Info)
         self.dlg.textBrowser.setText('python main.py %s\n\n%s'%(cmd,ns))
+        #
+        if self.dlg.checkBox_clipboard.isChecked():
+            pyperclip.copy(cmd)
         return ns
 
     def runCell2Fire(self):
@@ -442,6 +446,9 @@ class FireClass:
         self.dlg.radioButton_weather_rows.click()
         self.dlg.bar.pushMessage('FireGui', 'Weather.csv written', level = Qgis.Success)
 
+    def clipboardChecked(self):
+        self.getParams()
+
     def run(self):
         """Run method that performs all the real work"""
         # Get the project instance
@@ -472,6 +479,7 @@ class FireClass:
             # run
             self.dlg.pushButton_Run.clicked.connect(self.runCell2Fire)
             self.dlg.pushButton_Abort.clicked.connect(self.abortCell2Fire)
+            self.dlg.checkBox_clipboard.toggled.connect( self.clipboardChecked)
             # weather
             self.dlg.pushButton_writeWeather.clicked.connect(self.doConstantWeather)
         # show the dialog
