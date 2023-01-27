@@ -148,7 +148,7 @@ class Cell2FireC:
     '''
     def generateDataC(self):
         dataName = os.path.join(self.args.InFolder, "Data.csv")
-        if os.path.isfile(dataName) is False:
+        if os.path.isfile(dataName) is False or self.args.input_gendata:
             print("Generating Data.csv File...")
             DataGenerator.GenDataFile(self.args.InFolder)
 

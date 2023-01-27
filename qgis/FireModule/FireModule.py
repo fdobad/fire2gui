@@ -23,7 +23,7 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QAction, QMessageBox
 from qgis.core import QgsMessageLog, Qgis, QgsProject, QgsApplication
 from qgis.gui import QgsMessageBar
 
@@ -35,9 +35,8 @@ from .FireModule_dialog import FireClassDialog
 import os.path
 
 # Use pdb for debugging
-#import pdb
-# also import pyqtRemoveInputHook
-#from qgis.PyQt.QtCore import pyqtRemoveInputHook
+import pdb
+from qgis.PyQt.QtCore import pyqtRemoveInputHook
 # These lines allow you to set a breakpoint in the app
 #pyqtRemoveInputHook()
 #pdb.set_trace()
@@ -46,6 +45,8 @@ import os.path
 from .Cell2FireQgisTask import *
 from argparse import Namespace
 import pickle
+from datetime import datetime
+from pandas import DataFrame
 
 MESSAGE_CATEGORY = 'Cell2Fire'
 
@@ -87,6 +88,7 @@ class FireClass:
         # store cell2fire args
         self.args = {}
         self.pars = pickle.load(open(self.plugin_dir+'/pars.p','rb'))
+        self.task = None
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -198,28 +200,107 @@ class FireClass:
 
     def tab_callback(self):
         ci = self.dlg.tabWidget.currentIndex()
-        QgsMessageLog.logMessage('tab_callback\t%s'%(ci), MESSAGE_CATEGORY, level = Qgis.Info)
-        self.dlg.bar.pushMessage("tab event", "tab changed to %s"%ci, level = Qgis.Info)
+        if ci == 0:
+            self.dlg.bar.pushMessage("FireGui", "Select a input folder to (re)scan for files", level = Qgis.Info)
+        if ci == 5:
+            pass
+        if ci == 8:
+            self.dlg.bar.pushMessage("FireGui", "stats->grids, [Any]plots->messages", level = Qgis.Info)
         if ci == 9:
             self.getParams()
+        sender = self.dlg.sender()
+        senderName = sender.objectName()
+        QgsMessageLog.logMessage('tab_callback\tci:%s\tname:%s'%(ci,senderName), MESSAGE_CATEGORY, level = Qgis.Info)
 
     def file_callback(self):
-        #pyqtRemoveInputHook()
-        #pdb.set_trace()
         sender = self.dlg.sender()
         senderName = sender.objectName()
         filePath = sender.filePath()
-        QgsMessageLog.logMessage('file_callback\t%s\t%s'%(senderName, filePath), MESSAGE_CATEGORY, level = Qgis.Info)
-        self.dlg.bar.pushMessage("file picker event", "choosen folder \t%s\t%s"%(senderName, filePath), level = Qgis.Info)
-
+        QgsMessageLog.logMessage('file_callback\tname:%s\tfile:%s'%(senderName, filePath), MESSAGE_CATEGORY, level = Qgis.Info)
+        #self.dlg.bar.pushMessage("file picker event", "choosen folder \t%s\t%s"%(senderName, filePath), level = Qgis.Info)
+        #
         # logica ui
         if senderName == 'mQgsFileWidget_InFolder':
-            if os.path.isfile( os.path.join( filePath, 'elevation.asc')):
-                self.dlg.mQgsFileWidget_elevation.setFilePath( os.path.join( filePath, 'elevation.asc'))
-                self.dlg.radioButton_elevationFile.click()
-            if os.path.isfile( os.path.join( filePath, 'Ignitions.csv')):
-                self.dlg.mQgsFileWidget_Ignitions.setFilePath( os.path.join( filePath, 'Ignitions.asc'))
+            # store
+            self.args['InFolder'] = filePath
+            if self.args['InFolder'][-1] != os.sep:
+                self.args['InFolder'] = self.args['InFolder'] + os.sep
+            # ignitions
+            file_name='Ignitions.csv'
+            if os.path.isfile( os.path.join( filePath, file_name)):
+                self.dlg.mQgsFileWidget_Ignitions.setFilePath( os.path.join( filePath, file_name))
                 self.dlg.radioButton_IgPointFile.click()
+            else:
+                self.dlg.mQgsFileWidget_Ignitions.lineEdit().setValue( file_name+' not found in input folder!')
+            # py
+            file_name='py.asc'
+            if os.path.isfile( os.path.join( filePath, file_name)):
+                self.dlg.mQgsFileWidget_IgProbMap.setFilePath( os.path.join( filePath, file_name))
+                #self.dlg.radioButton_IgProbMapFile.click()
+            else:
+                self.dlg.mQgsFileWidget_IgProbMap.lineEdit().setValue( file_name+' not found in input folder!')
+            # elevation
+            file_name='elevation.asc'
+            if os.path.isfile( os.path.join( filePath, file_name)):
+                self.dlg.mQgsFileWidget_elevation.setFilePath( os.path.join( filePath, file_name))
+                self.dlg.radioButton_elevationFile.click()
+            else:
+                self.dlg.mQgsFileWidget_elevation.lineEdit().setValue( file_name+' not found in input folder!')
+            # fuels
+            ## forest or fuels
+            fo = os.path.isfile( os.path.join( filePath, 'Forest.asc'))
+            fu = os.path.isfile( os.path.join( filePath, 'fuels.asc'))
+            if fo or fu:
+                if fu:
+                    fn = 'fuels.asc'
+                if fo:
+                    fn = 'Forest.asc'
+                self.dlg.mQgsFileWidget_Fuels.setFilePath( os.path.join( filePath, fn))
+            else:
+                self.dlg.mQgsFileWidget_Fuels.lineEdit().setValue("Neither Forest nor fuels (.asc) found in input folder!" )
+            ## BBO
+            file_name='BBOFuels.csv'
+            if os.path.isfile( os.path.join( filePath, file_name)):
+                self.dlg.mQgsFileWidget_BBO.setFilePath( os.path.join( filePath, file_name))
+                self.dlg.checkBox_BBO.click()
+            else:
+                self.dlg.mQgsFileWidget_BBO.lineEdit().setValue( file_name+" not found in input folder!" )
+            ## Treatment
+            file_name='Harvest.csv'
+            if os.path.isfile( os.path.join( filePath, file_name)):
+                self.dlg.mQgsFileWidget_HCells.setFilePath( os.path.join( filePath, file_name))
+                self.dlg.checkBox_HCells.click()
+            else:
+                self.dlg.mQgsFileWidget_HCells.lineEdit().setValue( file_name+" not found in input folder!" )
+            ## Weather
+            ### file
+            file_name='Weather.csv'
+            if os.path.isfile( os.path.join( filePath, file_name)):
+                self.dlg.bar.pushMessage('FireGui', 'Weather.csv found!', level = Qgis.Info )
+                self.dlg.radioButton_weather_rows.click()
+                self.dlg.radioButton_weather_rows.setEnabled(True)
+            else:
+                self.dlg.bar.pushMessage('FireGui', 'No Weather.csv found!', level = Qgis.Info )
+                self.dlg.radioButton_weather_rows.setDisabled(True)
+            ### directory
+            directory = os.path.join( filePath, 'Weathers/')
+            if os.path.isdir( directory):
+                i=1
+                while os.path.isfile( os.path.join( directory, 'Weather'+str(i)+'.csv')):
+                    i+=1
+                i-=1
+                if i==0:
+                    self.dlg.bar.pushMessage('FireGui', 'Weathers folder found! But without Weather<N>.csv files!', level = Qgis.Warning)
+                    self.dlg.mQgsSpinBox_nweathers.setDisabled(True)
+                else:
+                    self.dlg.bar.pushMessage('FireGui', 'Weathers folder found! '+str(i)+' available Weathers', level = Qgis.Info )
+                    self.dlg.mQgsSpinBox_nweathers.setEnabled(True)
+                    self.dlg.mQgsSpinBox_nweathers.setMaximum(i)
+                    self.dlg.mQgsSpinBox_nweathers.setValue(i)
+                    self.dlg.radioButton_RandW.click()
+            else:
+                self.dlg.mQgsSpinBox_nweathers.setDisabled(True)
+                self.dlg.bar.pushMessage('FireGui', 'Weathers folder not found!', level = Qgis.Info)
 
     def getParams(self):
         '''
@@ -247,7 +328,10 @@ class FireClass:
         self.args['heuristic'] = -1
         self.args['messages_path'] = None
         self.args['GASelection'] = False
-        self.args['HCells'] = None
+        if self.dlg.checkBox_HCells.isChecked() and self.dlg.mQgsFileWidget_HCells.filePath()!='':
+            self.args['HCells'] = self.dlg.mQgsFileWidget_HCells.filePath()
+        else:
+            self.args['HCells'] = None
         self.args['msgHeur'] = ''
         self.args['planPath'] = ''
         self.args['TFraction'] = 1.0
@@ -285,12 +369,9 @@ class FireClass:
         self.args['plots'] = self.dlg.checkBox_plots.isChecked() #False
         self.args['allPlots'] = self.dlg.checkBox_allPlots.isChecked() #False
         self.args['combine'] = self.dlg.checkBox_combine.isChecked() #False
-        self.args['no_output'] = self.dlg.checkBox_no_output.isChecked() #False
         self.args['input_gendata'] = self.dlg.checkBox_input_gendata.isChecked() #False
         self.args['OutMessages'] = self.dlg.checkBox_OutMessages.isChecked() #False
         self.args['OutBehavior'] = self.dlg.checkBox_OutBehavior.isChecked() #False
-        self.args['PromTuning'] = self.dlg.checkBox_PromTuning.isChecked() #False
-        self.args['input_trajectories'] = self.dlg.checkBox_input_trajectories.isChecked() #False
         self.args['stats'] = self.dlg.checkBox_stats.isChecked() #False
         self.args['Geotiffs'] = self.dlg.checkBox_Geotiffs.isChecked() #False
         self.args['tCorrected'] = self.dlg.checkBox_tCorrected.isChecked() #False
@@ -299,7 +380,7 @@ class FireClass:
         self.args['cros'] = self.dlg.checkBox_cros.isChecked() #False
         self.args['fdemand'] = False
         self.args['pdfOutputs'] = self.dlg.checkBox_pdfOutputs.isChecked() #False
-        self.args['input_PeriodLen'] = self.dlg.mQgsSpinBox_input_PeriodLen.value() #60
+        self.args['input_PeriodLen'] = self.dlg.mQgsDoubleSpinBox_input_PeriodLen.value() #60
         self.args['weather_period_len'] = self.dlg.mQgsSpinBox_weather_period_len.value() #60
         self.args['ROS_Threshold'] = self.dlg.mQgsDoubleSpinBox_ROS_Threshold.value() #0.1
         self.args['HFI_Threshold'] = self.dlg.mQgsDoubleSpinBox_HFI_Threshold.value() #0.1
@@ -308,7 +389,6 @@ class FireClass:
         self.args['FFactor'] = self.dlg.mQgsDoubleSpinBox_FFactor.value() #1.0
         self.args['BFactor'] = self.dlg.mQgsDoubleSpinBox_BFactor.value() #1.0
         self.args['EFactor'] = self.dlg.mQgsDoubleSpinBox_EFactor.value() #1.0
-        self.args['BurningLen'] = self.dlg.mQgsDoubleSpinBox_BurningLen.value() #-1.0
         self.args['ROS10Factor'] = self.dlg.mQgsDoubleSpinBox_ROS10Factor.value() #3.34
         self.args['CCFFactor'] = self.dlg.mQgsDoubleSpinBox_CCFFactor.value() #0.0
         self.args['CBDFactor'] = self.dlg.mQgsDoubleSpinBox_CBDFactor.value() #0.0
@@ -338,6 +418,30 @@ class FireClass:
         self.task = Cell2FireTask(argsNs , 'running '+fn)
         QgsApplication.taskManager().addTask(self.task)
 
+    def abortCell2Fire(self):
+        self.task.cancel()
+
+    def doConstantWeather(self):
+        ''' ask and overwrite weather.csv
+        '''
+        #pyqtRemoveInputHook()
+        #pdb.set_trace()
+        if os.path.isfile( os.path.join( self.args['InFolder'], 'Weather.csv')):
+            self.dlg.bar.pushMessage('FireGui', 'Weather.csv already exists!', level = Qgis.Warning)
+            question = QMessageBox.question( self.dlg, 'Irreversible!', 'Overwrite Weather.csv?')
+            if question != QMessageBox.Yes:
+                self.dlg.bar.pushMessage('FireGui', 'Canceled', level = Qgis.Info)
+                return
+        ws = self.dlg.spinBox_ConstWS.value()
+        wd = self.dlg.spinBox_ConstWD.value()
+        #QgsMessageLog.logMessage("doConstantWeather\tws:%s\twd:%s"%(ws,wd), MESSAGE_CATEGORY, level = Qgis.Info)
+        df = DataFrame( columns=['Instance','datetime','WS','WD','FireScenario'])
+        df.loc[len(df)] = ['guiGeneratedInstance',datetime.now(),ws,wd,1]
+        df.to_csv( os.path.join( self.args['InFolder'],'Weather.csv'), header=True, index=False)
+        self.dlg.radioButton_weather_rows.setEnabled(True)
+        self.dlg.radioButton_weather_rows.click()
+        self.dlg.bar.pushMessage('FireGui', 'Weather.csv written', level = Qgis.Success)
+
     def run(self):
         """Run method that performs all the real work"""
         # Get the project instance
@@ -353,23 +457,23 @@ class FireClass:
             # duration : 0=forever, -1=level default
             self.dlg.bar = QgsMessageBar()
             self.dlg.layout().insertRow(0,self.dlg.bar) # at the end: .addRow . see qformlayout
-            self.dlg.bar.pushMessage("I'm FireGui", "Hello World!", level = Qgis.Info, duration = 0)
+            self.dlg.bar.pushMessage("I'm FireGui", "Hello World! Select a input folder to scan for files", level = Qgis.Info, duration = 0)
             #
             # object.signal.connect(slot)
             # tabs
             self.dlg.tabWidget.currentChanged.connect(self.tab_callback)
             # folders
             #self.dlg.mQgsFileWidget.lineEdit().setValue('...Select the folder with instance files')
-            self.dlg.mQgsFileWidget_InFolder.setFilePath( '/home/fdo/source/C2FSB/data/Hom_Fuel_101_40x40/')
+            self.dlg.mQgsFileWidget_InFolder.setFilePath( '/home/fdo/source/Cell2Fire/data/')
             #self.dlg.mQgsFileWidget_InFolder.setFilePath( projectDir)
             self.dlg.mQgsFileWidget_InFolder.fileChanged.connect( self.file_callback)
             self.dlg.mQgsFileWidget_OutFolder.setFilePath( projectDir)
             self.dlg.mQgsFileWidget_OutFolder.fileChanged.connect( self.file_callback)
-            # elevation
-            if os.path.isfile( os.path.join( projectDir, 'elevation.asc')):
-                self.dlg.mQgsFileWidget_elevation.setFilePath( os.path.join( projectDir, 'elevation.asc'))
             # run
             self.dlg.pushButton_Run.clicked.connect(self.runCell2Fire)
+            self.dlg.pushButton_Abort.clicked.connect(self.abortCell2Fire)
+            # weather
+            self.dlg.pushButton_writeWeather.clicked.connect(self.doConstantWeather)
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
