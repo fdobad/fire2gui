@@ -1,0 +1,74 @@
+gui2
+	layers
+		inputs
+			landscape
+				fuels
+				elevation
+				cbh
+				cbd
+				ccf
+			viento[s]
+				flecha
+				campo
+		outputs
+			fuegos
+			estadisticos
+			proteccion
+	formularios
+		landscape
+			elegir layers
+			des/activar crown fire
+				fuego de copas o superficie
+		weather
+			random
+			folders
+			single
+			cvar #
+			humidity
+				combobox 4 cosas d1l1,d2l2,d3l2...
+				cada una acompa;ado de fmc
+		fire scenario
+			ignition
+				random
+					igProbMap
+					full random
+					# simulations
+				igPoints (layer)
+					si tengo 5 ptos, al menos simular 5
+					o samplear max
+		reglas de simulacion
+			fuegodecopas
+				spotting
+				crown
+				rosFM10
+			condiciones de parada
+				tiempo max
+				hfi treshold
+				ros treshold
+		resultados
+			comportamiento del fuego
+				ESTO ES LAYER
+				velocidad
+				dire
+				flame length medio y maximo
+				ros medio y max
+				crown fuel consumption
+				subio o no a copa
+				n
+					cuantas veces a pasado el incendio por ahi
+					capa
+			scenario
+				scen1..n
+				scar
+					perimetro
+					area
+			estadisticos
+				n
+				media
+				max
+				%95
+			estadisticos en tabla
+			2 tipos fire bh y decision making
+			DM
+				value at risk
+				DPV
