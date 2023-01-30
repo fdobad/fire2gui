@@ -428,7 +428,7 @@ class FireClass:
         return ns
 
     def runCell2Fire(self):
-        if self.task is None or self.task.status()==4:
+        if self.task is None or (isinstance( self.task, QgsTask) and self.task.status()==4):
             argsNs = self.getParams()
             fn = os.path.basename( QgsProject.instance().fileName())
             self.task = Cell2FireTask(argsNs , fn if fn!='' else 'no project open')
