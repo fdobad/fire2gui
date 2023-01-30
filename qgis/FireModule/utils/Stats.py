@@ -1,7 +1,8 @@
+#REPLENV: C:/OSGeo4W/bin/ipython-setup-qgis.bat
 # coding: utf-8
 __version__ = "1.0"
 __author__ = "Cristobal Pais"
-# Minor edits by David L. Woodruff
+# Minor edits by David L. Woodruff & Fdo B.
 
 # Statistics Class
 # Importations
@@ -12,27 +13,28 @@ import os
 import re
 
 # Plot
-import matplotlib
-from matplotlib.backends.backend_pdf import PdfPages
+#import matplotlib
+#from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import rcParams
 import matplotlib.pyplot as plt
-from matplotlib.pylab import *
-import matplotlib as mpl
+#from matplotlib.pylab import *
+#import matplotlib as mpl
 import matplotlib.cm as cm
-import matplotlib.patches as patches
-from matplotlib.colors import LinearSegmentedColormap
+#import matplotlib.patches as patches
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap, BoundaryNorm
 import seaborn as sns
-import matplotlib.colors as colors
-import cv2
+#import matplotlib.colors as colors
+import imread
+
 
 # Extra
-import multiprocessing
-from multiprocessing import Process
+#import multiprocessing
+#from multiprocessing import Process
 
 # Extra
 from operator import itemgetter
-import itertools
+#import itertools
 from .coord_xy import *  # TBD: drop import *
 from tqdm import tqdm
 import networkx as nx
@@ -41,6 +43,50 @@ from shutil import copy2
 # Cell2Fire
 ### import cell2fire.utils.ReadDataPrometheus as ReadDataPrometheus
 
+def setGlobalPlottingParams():
+    '''
+    # Font sizes
+    rcParams['font.size'] = 16
+    rcParams['axes.labelsize'] = 16
+    rcParams['axes.titlesize'] = 16
+    rcParams['xtick.labelsize'] = 16
+    rcParams['ytick.labelsize'] = 16
+    rcParams['legend.fontsize'] = 16
+    rcParams['figure.titlesize'] = 18
+    '''
+    params={ \
+        'backend':'Agg',
+        'font.size' : 16,
+        'axes.labelsize' : 16,
+        'axes.titlesize' : 16,
+        'xtick.labelsize' : 16,
+        'ytick.labelsize' : 16,
+        'legend.fontsize' : 16,
+        'figure.titlesize' : 18,
+        }
+    rcParams.update(**params)
+    sns.set_theme(rc=params)
+
+# Plot style
+def plt_style( w=15, h=9, t=False, r=False, b=True, l=True):
+    plt.figure(1, figsize = (w, h)) 
+    ax = plt.subplot(111)                    
+    ax.spines["top"].set_visible(t)  
+    ax.spines["right"].set_visible(r)
+    ax.spines["bottom"].set_visible(b)
+    ax.spines["left"].set_visible(l)
+    ax.get_xaxis().tick_bottom()  
+    ax.get_yaxis().tick_left() 
+    return ax
+    
+def add_alpha_channel( src, alpha=255):
+    if src.shape[-1] == 3:
+        H,W,_ = src.shape
+        dst = np.empty((H,W,4), dtype=src.dtype)
+        dst[:,:,:3] = np.copy(src)
+        dst[:,:,3] = np.ones((H,W), dtype=src.dtype)*alpha
+        return dst
+    return np.copy(src)
 
 class Statistics(object):
     # Initializer
@@ -90,8 +136,10 @@ class Statistics(object):
             if self._verbose:
                 print("creating", self._StatsFolder)
             os.makedirs(self._StatsFolder)
-            
-        ## local utility ##
+
+        # set once
+        setGlobalPlottingParams()       
+
     def _GridDir(self, SimNum):
         """ Factored code to deal with grid files from the C++ side.
         Args:
@@ -116,50 +164,11 @@ class Statistics(object):
     #            Methods               #
     #                                  #
     ####################################
-    # Plot style
-    def plt_style(self):
-        # Figure
-        plt.figure(figsize = (15, 9)) 
-
-        # Font sizes
-        plt.rcParams['font.size'] = 16
-        plt.rcParams['axes.labelsize'] = 16
-        plt.rcParams['axes.titlesize'] = 16
-        plt.rcParams['xtick.labelsize'] = 16
-        plt.rcParams['ytick.labelsize'] = 16
-        plt.rcParams['legend.fontsize'] = 16
-        plt.rcParams['figure.titlesize'] = 18
-
-        # axes
-        ax = plt.subplot(111)                    
-        ax.spines["top"].set_visible(False)  
-        ax.spines["right"].set_visible(False)
-        ax.get_xaxis().tick_bottom()  
-        ax.get_yaxis().tick_left() 
-    
     # Boxplot function
     def BoxPlot(self, Data, xx="Hour", yy="Burned", xlab="Hours", ylab="# Burned Cells", 
                 pal="Reds", title="Burned Cells Evolution", Path=None, namePlot="BoxPlot",
                 swarm=True):
-        
-        # Figure
-        plt.figure(figsize = (15, 9)) 
-
-        # Font sizes
-        plt.rcParams['font.size'] = 16
-        plt.rcParams['axes.labelsize'] = 16
-        plt.rcParams['axes.titlesize'] = 16
-        plt.rcParams['xtick.labelsize'] = 16
-        plt.rcParams['ytick.labelsize'] = 16
-        plt.rcParams['legend.fontsize'] = 16
-        plt.rcParams['figure.titlesize'] = 18
-
-        # axes
-        ax = plt.subplot(111)                    
-        ax.spines["top"].set_visible(False)  
-        ax.spines["right"].set_visible(False)
-        ax.get_xaxis().tick_bottom()  
-        ax.get_yaxis().tick_left() 
+        plt_style()
 
         # Title and labels
         plt.title(title)
@@ -178,15 +187,14 @@ class Statistics(object):
         plt.savefig(os.path.join(Path, namePlot + ".png"), dpi=200, bbox_inches='tight')
         if self._pdfOutputs:
             plt.savefig(os.path.join(Path, namePlot + ".pdf"), dpi=200, bbox_inches='tight')
-        plt.close("all")
+        plt.clf()
         
-    
     # Final forest boxplot
     def FinalBoxPlots(self, OutFolder=None, title="Final Forest Status",
                       namePlot="FinalStats_BoxPlot"):
 
         # Style
-        self.plt_style()
+        plt_style()
 
         # Title and labels
         plt.title(title)
@@ -207,7 +215,7 @@ class Statistics(object):
         plt.savefig(os.path.join(self._StatsFolder, namePlot + ".png"), dpi=200, bbox_inches='tight')
         if self._pdfOutputs:
             plt.savefig(os.path.join(self._StatsFolder, namePlot + ".pdf"), dpi=200, bbox_inches='tight')
-        plt.close("all")
+        plt.clf()
     
     # Histograms
     def plotHistogram(self, df, NonBurned=False, xx="Hour", xmax=6, KDE=True, title="Histogram: Burned Cells",
@@ -217,24 +225,7 @@ class Statistics(object):
         rcParams['patch.force_edgecolor'] = True
         rcParams['patch.facecolor'] = 'b'
 
-        # Figure Size
-        plt.figure(figsize = (15, 9)) 
-
-        # Font sizes
-        plt.rcParams['font.size'] = 16
-        plt.rcParams['axes.labelsize'] = 16
-        plt.rcParams['axes.titlesize'] = 16
-        plt.rcParams['xtick.labelsize'] = 16
-        plt.rcParams['ytick.labelsize'] = 16
-        plt.rcParams['legend.fontsize'] = 16
-        plt.rcParams['figure.titlesize'] = 18
-
-        # axes
-        ax = plt.subplot(111)                    
-        ax.spines["top"].set_visible(False)  
-        ax.spines["right"].set_visible(False)
-        ax.get_xaxis().tick_bottom()  
-        ax.get_yaxis().tick_left() 
+        plt_style()
 
         # Title and labels
         plt.title(title)
@@ -256,30 +247,13 @@ class Statistics(object):
                 os.makedirs(Path)
 
         plt.savefig(os.path.join(Path, namePlot + ".png"), dpi=200, bbox_inches='tight')
-        plt.close("all")
+        plt.clf()
 
     # Burnt Probability Heatmap
     #   cbarF seems to indicate no legend when true.
     def BPHeatmap(self, WeightedScar, Path=None, nscen=10, sq=False, namePlot="BP_HeatMap", 
                   Title=None, cbarF=True, ticks=100, transparent=False):
-        # Figure size
-        plt.figure(figsize = (15, 9)) 
-
-        # Font sizes
-        plt.rcParams['font.size'] = 16
-        plt.rcParams['axes.labelsize'] = 16
-        plt.rcParams['axes.titlesize'] = 16
-        plt.rcParams['xtick.labelsize'] = 16
-        plt.rcParams['ytick.labelsize'] = 16
-        plt.rcParams['legend.fontsize'] = 16
-        plt.rcParams['figure.titlesize'] = 18
-
-        # axes
-        ax = plt.subplot(111)                    
-        ax.spines["top"].set_visible(False)  
-        ax.spines["right"].set_visible(False)
-        ax.get_xaxis().tick_bottom()  
-        ax.get_yaxis().tick_left() 
+        plt_style()
 
         # Title and labels
         if Title is None:
@@ -292,7 +266,7 @@ class Statistics(object):
         lower = plt.cm.seismic(np.ones(1)*0.50)  # Original is ones 
         upper = cmap(np.linspace(0.5, 1, 100))
         colors = np.vstack((lower,upper))
-        tmap = matplotlib.colors.LinearSegmentedColormap.from_list('terrain_map_white', colors)
+        tmap = LinearSegmentedColormap.from_list('terrain_map_white', colors)
 
         # Create Heatmap
         ax = sns.heatmap(WeightedScar, xticklabels=ticks, yticklabels=ticks, linewidths=0.0, linecolor="w",
@@ -320,32 +294,13 @@ class Statistics(object):
         if self._pdfOutputs:
             plt.savefig(os.path.join(Path, namePlot + ".pdf"), dpi=200, bbox_inches='tight', 
                     pad_inches=0, transparent=transparent)
-        
-        
-        plt.close("all")
+        plt.clf()
     
     # ROS Heatmap
     def ROSHeatmap(self, ROSM, Path=None, nscen=1, sq=True, namePlot="ROS_HeatMap",
                    Title=None, cbarF=True, ticks="auto", transparent=False, 
                    annot=False, lw=0.01, vmin=0, vmax=None):
-        # Figure size
-        plt.figure(figsize = (15, 9)) 
-
-        # Font sizes
-        plt.rcParams['font.size'] = 16
-        plt.rcParams['axes.labelsize'] = 16
-        plt.rcParams['axes.titlesize'] = 16
-        plt.rcParams['xtick.labelsize'] = 16
-        plt.rcParams['ytick.labelsize'] = 16
-        plt.rcParams['legend.fontsize'] = 16
-        plt.rcParams['figure.titlesize'] = 18
-
-        # axes
-        ax = plt.subplot(111)                    
-        ax.spines["top"].set_visible(False)  
-        ax.spines["right"].set_visible(False)
-        ax.get_xaxis().tick_bottom()  
-        ax.get_yaxis().tick_left() 
+        plt_style()
 
         # Title and labels
         if Title is None:
@@ -358,7 +313,7 @@ class Statistics(object):
         lower = plt.cm.seismic(np.ones(1)*0.50)  # Original is ones 
         upper = cmap(np.linspace(0.5, 1, 100))
         colors = np.vstack((lower,upper))
-        tmap = matplotlib.colors.LinearSegmentedColormap.from_list('terrain_map_white', colors)
+        tmap = LinearSegmentedColormap.from_list('terrain_map_white', colors)
 
         # Limits
         if vmax is None:
@@ -387,8 +342,7 @@ class Statistics(object):
         if self._pdfOutputs:
             plt.savefig(os.path.join(Path, namePlot + ".pdf"), dpi=200, bbox_inches='tight', 
                         pad_inches=0, transparent=transparent)
-        
-        plt.close("all")
+        plt.clf() 
     
     # ROS Matrix individual
     def ROSMatrix_ind(self, nSim): 
@@ -413,7 +367,6 @@ class Statistics(object):
         self.ROSHeatmap(ROSM, Path=PlotPath, nscen=1, sq=True, namePlot="ROS_Heatmap", 
                         Title="ROS Heatmap", cbarF=True)
         
-    
     # ROS Matrix
     def ROSMatrix_AVG(self, nSims): 
         # Container 
@@ -460,8 +413,6 @@ class Statistics(object):
                         Title="AVG ROS Heatmap",
                         cbarF=True)
 
-        
-    
     # Generate G graph
     def GGraphGen(self, full=False):
         # Graph generation
@@ -513,23 +464,7 @@ class Statistics(object):
         for i in self._GGraph.nodes:
             coord_pos[i] = CoordCells[i-1] + 0.5
         
-        # Font sizes
-        plt.rcParams['font.size'] = 16
-        plt.rcParams['axes.labelsize'] = 16
-        plt.rcParams['axes.titlesize'] = 16
-        plt.rcParams['xtick.labelsize'] = 16
-        plt.rcParams['ytick.labelsize'] = 16
-        plt.rcParams['legend.fontsize'] = 16
-        plt.rcParams['figure.titlesize'] = 18
-
-        # axes
-        ax = plt.subplot(111)                    
-        ax.get_xaxis().tick_bottom()  
-        ax.get_yaxis().tick_left() 
-        plt.ylim(bottom=0)
-        for _, spine in ax.spines.items():
-            spine.set_visible(True)
-
+        ax = plt_style(w=40, h=40, r=True,t=True)
 
         # Dimensionamos el eje X e Y
         #plt.axis([-1, self._Rows, -1, self._Cols])
@@ -605,13 +540,13 @@ class Statistics(object):
                 plt.colorbar(sm, cax=cax1)
                 
             plt.savefig(os.path.join(self._StatsFolder, "SpreadTree_FreqGraph_" + outname + ".png"), 
-                        dpi=200, figsize=(200, 200), 
+                        dpi=200, 
                         bbox_inches='tight', transparent=False)
             if self._pdfOutputs:
                 plt.savefig(os.path.join(self._StatsFolder, "SpreadTree_FreqGraph_" + outname + ".pdf"), 
-                            dpi=200, figsize=(200, 200), 
+                            dpi=200, 
                             bbox_inches='tight', transparent=False)
-            plt.close("all")
+            plt.clf()
 
     # Fire Spread evolution plots (per sim)
     def SimFireSpreadEvo(self, nSim, CoordCells, Colors, H=None, version=0,
@@ -638,23 +573,7 @@ class Statistics(object):
         # We generate the plot
         if print_graph:
 
-            # plt.figure(figsize = (15, 9)) 
-
-            # Font sizes
-            plt.rcParams['font.size'] = 16
-            plt.rcParams['axes.labelsize'] = 16
-            plt.rcParams['axes.titlesize'] = 16
-            plt.rcParams['xtick.labelsize'] = 16
-            plt.rcParams['ytick.labelsize'] = 16
-            plt.rcParams['legend.fontsize'] = 16
-            plt.rcParams['figure.titlesize'] = 18
-
-            # axes
-            ax = plt.subplot(111)                
-            for _, spine in ax.spines.items():
-                spine.set_visible(True)
-            ax.get_xaxis().tick_bottom()  
-            ax.get_yaxis().tick_left() 
+            plt_style(w=40, h=40, r=True,t=True)
 
             # Dimensionamos el eje X e Y
             plt.axis([-1, self._Rows, -1, self._Cols])
@@ -683,13 +602,14 @@ class Statistics(object):
                 os.makedirs(PlotPath)
             
             plt.savefig(os.path.join(PlotPath, "PropagationTree" + str(nSim) +".png"), 
-                        dpi=200, figsize=(200, 200), edgecolor='b', 
+                        dpi=200, edgecolor='b', 
                         bbox_inches='tight', transparent=False)
             
             if self._pdfOutputs:
                 plt.savefig(os.path.join(PlotPath, "PropagationTree" + str(nSim) +".pdf"), 
-                            dpi=200, figsize=(200, 200), edgecolor='b', 
+                            dpi=200, edgecolor='b', 
                             bbox_inches='tight', transparent=False)
+            plt.clf()
             
 
         # Hitting times and ROSs
@@ -745,23 +665,7 @@ class Statistics(object):
                                        node_shape='s',
                                        node_color = Colors)
 
-            # plt.figure(figsize = (15, 9)) 
-
-            # Font sizes
-            plt.rcParams['font.size'] = 16
-            plt.rcParams['axes.labelsize'] = 16
-            plt.rcParams['axes.titlesize'] = 16
-            plt.rcParams['xtick.labelsize'] = 16
-            plt.rcParams['ytick.labelsize'] = 16
-            plt.rcParams['legend.fontsize'] = 16
-            plt.rcParams['figure.titlesize'] = 18
-
-            # axes
-            ax = plt.subplot(111)       
-            for _, spine in ax.spines.items():
-                spine.set_visible(True)
-            ax.get_xaxis().tick_bottom()  
-            ax.get_yaxis().tick_left() 
+            ax=plt_style(w=40, h=40, r=True,t=True)
 
             # Dimensionamos el eje X e Y
             plt.axis([-1, self._Rows, -1, self._Cols])    
@@ -825,14 +729,14 @@ class Statistics(object):
             cax1 = divider.append_axes("right", size="5%", pad=0.05)
             plt.colorbar(sm, cax=cax1) 
             plt.savefig(os.path.join(PlotPath, "FireSpreadTree" + str(nSim) + "_" + str(version) + ".png"),
-                        dpi=200,  figsize=(200, 200), 
+                        dpi=200, 
                         bbox_inches='tight', transparent=False)
             
             if self._pdfOutputs:
                 plt.savefig(os.path.join(PlotPath, "FireSpreadTree" + str(nSim) + "_" + str(version) + ".pdf"),
-                            dpi=200,  figsize=(200, 200), 
+                            dpi=200, 
                             bbox_inches='tight', transparent=False)
-            plt.close("all")
+            plt.clf()
         
     
     # Individual BP maps (for plotting the evolution of the fire)
@@ -917,25 +821,7 @@ class Statistics(object):
         myColors = [myColorsD[x] for x in mykeys]
         #print("myColors:", myColors)
 
-        # Plot
-        # Figure size
-        plt.figure(figsize = (15, 9)) 
-
-        # Font sizes
-        plt.rcParams['font.size'] = 16
-        plt.rcParams['axes.labelsize'] = 16
-        plt.rcParams['axes.titlesize'] = 16
-        plt.rcParams['xtick.labelsize'] = 16
-        plt.rcParams['ytick.labelsize'] = 16
-        plt.rcParams['legend.fontsize'] = 16
-        plt.rcParams['figure.titlesize'] = 18
-
-        # axes
-        ax = plt.subplot(111)                    
-        ax.spines["top"].set_visible(False)  
-        ax.spines["right"].set_visible(False)
-        ax.get_xaxis().tick_bottom()  
-        ax.get_yaxis().tick_left() 
+        plt_style()
 
         # Title and labels
         plt.title(" ")
@@ -946,9 +832,9 @@ class Statistics(object):
                              square=True, xticklabels=False, yticklabels=False)
 
         else:
-            cmap = colors.ListedColormap(myColors)
+            cmap = ListedColormap(myColors)
             boundaries = [-1, 1]
-            norm = colors.BoundaryNorm(boundaries, cmap.N, clip=True)
+            norm = BoundaryNorm(boundaries, cmap.N, clip=True)
             ax = sns.heatmap(data, cmap=cmap, linewidths=.0, linecolor='lightgray', 
                              annot=False, cbar=False, norm=norm, square=True,   # Testing new options for combining
                              xticklabels=False, yticklabels=False)       
@@ -963,33 +849,33 @@ class Statistics(object):
         if self._pdfOutputs:
             plt.savefig(os.path.join(Path, namePlot + ".pdf"), dpi=200, bbox_inches='tight', 
                     pad_inches=0, transparent=False)
-
-        plt.close("all")
+        plt.clf()
 
     # Merge evolution plots with background (Initial forest)
-    def combinePlot(self, BackgroundPath, fileN, Sim):
+    def combinePlot(self, p1, BackgroundPath, fileN, Sim):
+        ''' moved outside
         # Read Forest
         ForestFile = os.path.join(BackgroundPath, "InitialForest.png")
         p1 = cv2.imread(ForestFile) 
+        '''
 
         # Read Evo plot
         fstr = str(fileN).zfill(2)
         PathFile = os.path.join(BackgroundPath, "Plots", "Plots"+ str(Sim), "Fire" + fstr + ".png")
-        p2 = cv2.imread(PathFile) 
+        p2 = imread.imread(PathFile) 
 
         # Alpha channels
-        p1 = cv2.cvtColor(p1, cv2.COLOR_BGR2RGBA)
-        p2 = cv2.cvtColor(p2, cv2.COLOR_BGR2RGBA)
+        p2 = add_alpha_channel(p2)
         p2[np.all(p2 >= [230, 230, 230, 230], axis=2)] = [0, 0, 0, 1]
 
         # Axis
-        gca().set_axis_off()
-        subplots_adjust(top = 1, bottom = 0, 
+        plt.gca().set_axis_off()
+        plt.subplots_adjust(top = 1, bottom = 0, 
                         right = 1, left = 0, 
                         hspace = 0, wspace = 0)
-        margins(0,0)
-        gca().xaxis.set_major_locator(NullLocator())
-        gca().yaxis.set_major_locator(NullLocator())
+        plt.margins(0,0)
+        plt.gca().xaxis.set_major_locator(plt.NullLocator())
+        plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
         # Create plot
         plt.imshow(p1, zorder=0)
@@ -998,12 +884,14 @@ class Statistics(object):
         if self._pdfOutputs:
             PathFile = os.path.join(BackgroundPath, "Plots", "Plots"+ str(Sim), "Fire" + fstr + ".pdf")
             plt.savefig(PathFile, dpi=200, bbox_inches='tight', pad_inches=0, transparent=False)
-        plt.close('all')
-     
+        plt.clf()
         
-    
     # Merge the plots
     def mergePlot(self, multip=True):
+        # Read Forest
+        ForestFile = os.path.join(BackgroundPath, "InitialForest.png")
+        p1 = imread.imread(ForestFile) 
+        p1 = add_alpha_channel(p1)
         # Stats per simulation
         for i in tqdm(range(self._nSims)):
             PlotPath = os.path.join(self._OutFolder, "Plots", "Plots" + str(i + 1))
@@ -1011,20 +899,25 @@ class Statistics(object):
             
             if multip is False:
                 for (j, _) in enumerate(PlotFiles):
-                    self.combinePlot(self._OutFolder, j + 1, i + 1)  
+                    self.combinePlot( p1, self._OutFolder, j + 1, i + 1)  
             
             else:
-                # Multiprocess
-                jobs = []
+                if system()!='Windows':
+                    # Multiprocess
+                    jobs = []
 
-                for (j, _) in enumerate(PlotFiles):
-                    p = Process(target=self.combinePlot, args=(self._OutFolder, j + 1, i + 1,))
-                    jobs.append(p)
-                    p.start()
+                    for (j, _) in enumerate(PlotFiles):
+                        p = Process(target=self.combinePlot, args=( p1, self._OutFolder, j + 1, i + 1,))
+                        jobs.append(p)
+                        p.start()
 
-                # complete the processes
-                for job in jobs:
-                    job.join()            
+                    # complete the processes
+                    for job in jobs:
+                        job.join()            
+                else:
+                    # MonopSerial
+                    for (j, _) in enumerate(PlotFiles):
+                        self.combinePlot( p1, self._OutFolder, j + 1, i + 1)  
     
     # General Stats (end of the fire stats per scenario) 
     def GeneralStats(self):
