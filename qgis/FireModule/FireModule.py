@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QMessageBox
-from qgis.core import QgsMessageLog, Qgis, QgsProject, QgsApplication
+from qgis.core import QgsMessageLog, Qgis, QgsProject, QgsApplication, QgsTask
 from qgis.gui import QgsMessageBar
 
 
@@ -35,8 +35,8 @@ from .FireModule_dialog import FireClassDialog
 import os.path
 
 # Use pdb for debugging
-import pdb
-from qgis.PyQt.QtCore import pyqtRemoveInputHook
+#import pdb
+#from qgis.PyQt.QtCore import pyqtRemoveInputHook
 # These lines allow you to set a breakpoint in the app
 #pyqtRemoveInputHook()
 #pdb.set_trace()
@@ -90,6 +90,7 @@ class FireClass:
         self.args = {}
         self.pars = pickle.load(open(self.plugin_dir+'/pars.p','rb'))
         self.task = None
+        self.taskManager = QgsApplication.taskManager()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -181,7 +182,7 @@ class FireClass:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-        icon_path = ':/plugins/FireModule/icon.png'
+        icon_path = ':/plugins/FireModule/Fire.png'
         self.add_action(
             icon_path,
             text = self.tr(u'FireMenuItemText'),
@@ -200,6 +201,11 @@ class FireClass:
             self.iface.removeToolBarIcon(action)
 
     def tab_callback(self):
+        '''
+        sender = self.dlg.sender()
+        senderName = sender.objectName()
+        QgsMessageLog.logMessage('tab_callback\tci:%s\tname:%s'%(ci,senderName), MESSAGE_CATEGORY, level = Qgis.Info)
+        '''
         ci = self.dlg.tabWidget.currentIndex()
         if ci == 0:
             self.dlg.bar.pushMessage("FireGui", "Select a input folder to (re)scan for files", level = Qgis.Info)
@@ -209,16 +215,12 @@ class FireClass:
             self.dlg.bar.pushMessage("FireGui", "stats->grids, [Any]plots->messages", level = Qgis.Info)
         if ci == 9:
             self.getParams()
-        sender = self.dlg.sender()
-        senderName = sender.objectName()
-        QgsMessageLog.logMessage('tab_callback\tci:%s\tname:%s'%(ci,senderName), MESSAGE_CATEGORY, level = Qgis.Info)
 
     def file_callback(self):
         sender = self.dlg.sender()
         senderName = sender.objectName()
         filePath = sender.filePath()
-        QgsMessageLog.logMessage('file_callback\tname:%s\tfile:%s'%(senderName, filePath), MESSAGE_CATEGORY, level = Qgis.Info)
-        #self.dlg.bar.pushMessage("file picker event", "choosen folder \t%s\t%s"%(senderName, filePath), level = Qgis.Info)
+        QgsMessageLog.logMessage('file picker name:%s\tchoosen:%s'%(senderName, filePath), MESSAGE_CATEGORY, level = Qgis.Info)
         #
         # logica ui
         if senderName == 'mQgsFileWidget_InFolder':
@@ -280,9 +282,11 @@ class FireClass:
                 self.dlg.bar.pushMessage('FireGui', 'Weather.csv found!', level = Qgis.Info )
                 self.dlg.radioButton_weather_rows.click()
                 self.dlg.radioButton_weather_rows.setEnabled(True)
+                wf=True
             else:
                 self.dlg.bar.pushMessage('FireGui', 'No Weather.csv found!', level = Qgis.Info )
                 self.dlg.radioButton_weather_rows.setDisabled(True)
+                wf=False
             ### directory
             directory = os.path.join( filePath, 'Weathers/')
             if os.path.isdir( directory):
@@ -291,20 +295,26 @@ class FireClass:
                     i+=1
                 i-=1
                 if i==0:
-                    self.dlg.bar.pushMessage('FireGui', 'Weathers folder found! But without Weather<N>.csv files!', level = Qgis.Warning)
+                    self.dlg.bar.pushMessage('FireGui', 'Weathers folder found! But without Weather<N>.csv files!', level = Qgis.Warning, duration=2)
                     self.dlg.mQgsSpinBox_nweathers.setDisabled(True)
+                    wd=True
                 else:
                     self.dlg.bar.pushMessage('FireGui', 'Weathers folder found! '+str(i)+' available Weathers', level = Qgis.Info )
                     self.dlg.mQgsSpinBox_nweathers.setEnabled(True)
                     self.dlg.mQgsSpinBox_nweathers.setMaximum(i)
                     self.dlg.mQgsSpinBox_nweathers.setValue(i)
                     self.dlg.radioButton_RandW.click()
+                    wd=False
             else:
                 self.dlg.mQgsSpinBox_nweathers.setDisabled(True)
                 self.dlg.bar.pushMessage('FireGui', 'Weathers folder not found!', level = Qgis.Info)
+                wd=False
+            if not wf and not wd:
+                self.dlg.radioButton_ConstW.click()
 
     def getParams(self):
         '''
+        # TODO modify parse args to not pickle it!
         # To get parsing options, in a ipython session:
         from argparse import ArgumentParser
         # Manually paste ParseInputs content from Cell2Fire/ParseInputs.py
@@ -362,7 +372,7 @@ class FireClass:
             self.args['IgRadius'] = self.dlg.mQgsSpinBox_IgRadius.value()
         elif self.dlg.radioButton_IgPointLayer.isChecked():
             QgsMessageLog.logMessage('IgPointLayer NotImplemented', MESSAGE_CATEGORY, level = Qgis.Warning)
-            # todo layer to csv ?
+            # TODO layer to csv ?
             #self.args['IgRadius'] = self.dlg.mQgsSpinBox_IgRadius.value()
         else:
             QgsMessageLog.logMessage('WTF! line 283', MESSAGE_CATEGORY, level = Qgis.Critical)
@@ -377,6 +387,7 @@ class FireClass:
         self.args['Geotiffs'] = self.dlg.checkBox_Geotiffs.isChecked() #False
         self.args['tCorrected'] = self.dlg.checkBox_tCorrected.isChecked() #False
         self.args['onlyProcessing'] = self.dlg.checkBox_onlyProcessing.isChecked() #False
+        # TODO : BBO or BBOTunning ?
         self.args['BBO'] = self.dlg.checkBox_BBO.isChecked() #False
         self.args['cros'] = self.dlg.checkBox_cros.isChecked() #False
         self.args['fdemand'] = False
@@ -407,29 +418,41 @@ class FireClass:
                 cmd += self.pars[k]['optstr'] + ' ' + str(self.args[k]) + ' '
         #
         ns = Namespace(**self.args)
-        QgsMessageLog.logMessage('args dictionary\t%s'%(self.args), MESSAGE_CATEGORY, level = Qgis.Info)
+        #QgsMessageLog.logMessage('args dictionary\t%s'%(self.args), MESSAGE_CATEGORY, level = Qgis.Info)
         QgsMessageLog.logMessage('args Namespace\t%s'%(ns), MESSAGE_CATEGORY, level = Qgis.Info)
-        QgsMessageLog.logMessage('args cmd\t%s'%(cmd), MESSAGE_CATEGORY, level = Qgis.Info)
-        self.dlg.textBrowser.setText('python main.py %s\n\n%s'%(cmd,ns))
+        #QgsMessageLog.logMessage('args cmd\t%s'%(cmd), MESSAGE_CATEGORY, level = Qgis.Info)
+        self.dlg.textBrowser.setText('python main.py %s'%(cmd))
         #
         if self.dlg.checkBox_clipboard.isChecked():
             pyperclip.copy(cmd)
         return ns
 
     def runCell2Fire(self):
-        argsNs = self.getParams()
-        fn = os.path.basename( QgsProject.instance().fileName())
-        self.task = Cell2FireTask(argsNs , 'running '+fn)
-        QgsApplication.taskManager().addTask(self.task)
+        if self.task is None or self.task.status()==4:
+            argsNs = self.getParams()
+            fn = os.path.basename( QgsProject.instance().fileName())
+            self.task = Cell2FireTask(argsNs , fn if fn!='' else 'no project open')
+            self.taskManager.addTask(self.task)
+        else:
+            QgsMessageLog.logMessage('Task already running!, with status %s'%self.task.status(), MESSAGE_CATEGORY, level = Qgis.Info)
 
-    def abortCell2Fire(self):
-        self.task.cancel()
+    def cancelCell2Fire(self):
+        if self.task is None:
+            return
+        if self.task.canCancel():
+            self.task.cancel()
+            return
+        QgsMessageLog.logMessage('Cannot cancel', MESSAGE_CATEGORY, level = Qgis.Critical)
+
+    def cancelAll(self):
+        if self.task is None:
+            return
+        self.taskManager.cancelAll()
+        QgsMessageLog.logMessage('All tasks cancel signal emmited!', MESSAGE_CATEGORY, level = Qgis.Critical)
 
     def doConstantWeather(self):
         ''' ask and overwrite weather.csv
         '''
-        #pyqtRemoveInputHook()
-        #pdb.set_trace()
         if os.path.isfile( os.path.join( self.args['InFolder'], 'Weather.csv')):
             self.dlg.bar.pushMessage('FireGui', 'Weather.csv already exists!', level = Qgis.Warning)
             question = QMessageBox.question( self.dlg, 'Irreversible!', 'Overwrite Weather.csv?')
@@ -439,6 +462,7 @@ class FireClass:
         ws = self.dlg.spinBox_ConstWS.value()
         wd = self.dlg.spinBox_ConstWD.value()
         #QgsMessageLog.logMessage("doConstantWeather\tws:%s\twd:%s"%(ws,wd), MESSAGE_CATEGORY, level = Qgis.Info)
+        # TODO : headers ok? version canada?
         df = DataFrame( columns=['Instance','datetime','WS','WD','FireScenario'])
         df.loc[len(df)] = ['guiGeneratedInstance',datetime.now(),ws,wd,1]
         df.to_csv( os.path.join( self.args['InFolder'],'Weather.csv'), header=True, index=False)
@@ -447,6 +471,7 @@ class FireClass:
         self.dlg.bar.pushMessage('FireGui', 'Weather.csv written', level = Qgis.Success)
 
     def clipboardChecked(self):
+        # TODO when you disable it still get's ran one more time
         self.getParams()
 
     def run(self):
@@ -470,15 +495,21 @@ class FireClass:
             # tabs
             self.dlg.tabWidget.currentChanged.connect(self.tab_callback)
             # folders
-            #self.dlg.mQgsFileWidget.lineEdit().setValue('...Select the folder with instance files')
-            self.dlg.mQgsFileWidget_InFolder.setFilePath( '/home/fdo/source/Cell2Fire/data/')
-            #self.dlg.mQgsFileWidget_InFolder.setFilePath( projectDir)
+            ## in
+            self.dlg.mQgsFileWidget_InFolder.setFilePath( projectDir)
+            if True:
+                if system()=='Windows':
+                    self.dlg.mQgsFileWidget_InFolder.setFilePath( 'C:/Users/fdo/Source/repos/cell2fire/data/')
+                elif system()=='Linux':
+                    self.dlg.mQgsFileWidget_InFolder.setFilePath( '/home/fdo/source/Cell2Fire/data/')
             self.dlg.mQgsFileWidget_InFolder.fileChanged.connect( self.file_callback)
+            ## out
             self.dlg.mQgsFileWidget_OutFolder.setFilePath( projectDir)
             self.dlg.mQgsFileWidget_OutFolder.fileChanged.connect( self.file_callback)
             # run
             self.dlg.pushButton_Run.clicked.connect(self.runCell2Fire)
-            self.dlg.pushButton_Abort.clicked.connect(self.abortCell2Fire)
+            self.dlg.pushButton_Cancel.clicked.connect(self.cancelCell2Fire)
+            self.dlg.pushButton_CancelAll.clicked.connect(self.cancelAll)
             self.dlg.checkBox_clipboard.toggled.connect( self.clipboardChecked)
             # weather
             self.dlg.pushButton_writeWeather.clicked.connect(self.doConstantWeather)
@@ -490,6 +521,6 @@ class FireClass:
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
-            QgsMessageLog.logMessage('result True', MESSAGE_CATEGORY, level = Qgis.Info)
+            QgsMessageLog.logMessage('plugin main run result True', MESSAGE_CATEGORY, level = Qgis.Info)
         else:
-            QgsMessageLog.logMessage('result False', MESSAGE_CATEGORY, level = Qgis.Info)
+            QgsMessageLog.logMessage('plugin main run result False', MESSAGE_CATEGORY, level = Qgis.Info)

@@ -8,19 +8,22 @@ MESSAGE_CATEGORY = 'Cell2Fire'
 import warnings
 warnings.filterwarnings("ignore")
 # Inputs and environment generator
-#from .ParseInputs import ParseInputs
+# TODO : modify ParseInputs to not pickle from .ParseInputs import ParseInputs
 from .Cell2FireC_class import *
-#from .Stats import *
-#from .Heuristics import *
 
 import sys, os
+from platform import system
 # Disable
 def blockPrint():
     sys.stdout = open(os.devnull, 'w')
+    if system() == 'Windows':
+        sys.stderr = open(os.devnull, 'w')
 
 # Restore
 def enablePrint():
     sys.stdout = sys.__stdout__
+    if system() == 'Windows':
+        sys.stderr = sys.__stderr__
 
 class Cell2FireTask(QgsTask):
     """This shows how to subclass QgsTask"""
@@ -29,12 +32,7 @@ class Cell2FireTask(QgsTask):
         self.exception = None
         self.args = args
         self.description = description
-        QgsMessageLog.logMessage('__init__ task "{}"'.format(
-                                     self.description),
-                                 MESSAGE_CATEGORY, Qgis.Info)
         self.path = os.path.dirname(os.path.abspath(__file__))
-        QgsMessageLog.logMessage('Path:' + self.path,
-                                 MESSAGE_CATEGORY, Qgis.Info)
 
     def run(self):
         """Here you implement your heavy lifting.
@@ -42,38 +40,40 @@ class Cell2FireTask(QgsTask):
         This method MUST return True or False.
         Raising exceptions will crash QGIS, so we handle them internally and raise them in self.finished
         """
-        blockPrint()
-        self.setProgress(0.0)
-        QgsMessageLog.logMessage('Started task "{}"'.format(
-                                     self.description),
-                                 MESSAGE_CATEGORY, Qgis.Info)
-        if self.isCanceled():
+        try:
+            QgsMessageLog.logMessage( 'Task "{}" run method started'.format( self.description), MESSAGE_CATEGORY, Qgis.Info)
+            blockPrint()
+            self.setProgress(0.0)
+            if self.isCanceled():
+                return False
+            # c++ simulation
+            QgsMessageLog.logMessage( 'Task "{}" c++ fire simulation started'.format( self.description), MESSAGE_CATEGORY, Qgis.Info)
+            env = Cell2FireC(self.args)
+            QgsMessageLog.logMessage( 'Task "{}" c++ fire simulation ended'.format( self.description), MESSAGE_CATEGORY, Qgis.Info)
+            self.setProgress(33.0)
+            if self.isCanceled():
+                return False
+            # Postprocessing: Plots Stats
+            if self.args.stats:
+                QgsMessageLog.logMessage( 'Task "{}" generating plots & statistics started'.format( self.description), MESSAGE_CATEGORY, Qgis.Info)
+                env.stats()
+                QgsMessageLog.logMessage( 'Task "{}" generating plots & statistics ended'.format( self.description), MESSAGE_CATEGORY, Qgis.Info)
+            self.setProgress(66.0)
+            if self.isCanceled():
+                return False
+            # heuristics
+            if self.args.heuristic != -1:
+                QgsMessageLog.logMessage( 'Task "{}" generating generating outputs for heuristics started'.format( self.description), MESSAGE_CATEGORY, Qgis.Info)
+                env.heur()
+                QgsMessageLog.logMessage( 'Task "{}" generating generating outputs for heuristics ended'.format( self.description), MESSAGE_CATEGORY, Qgis.Info)
+            enablePrint()
+        except Exception as e:
+            self.exception = e
             return False
-        QgsMessageLog.logMessage('C++ init', MESSAGE_CATEGORY, Qgis.Info)
-        env = Cell2FireC(self.args)
-        QgsMessageLog.logMessage('C++ ran', MESSAGE_CATEGORY, Qgis.Info)
-        #
-        self.setProgress(33.0)
-        if self.isCanceled():
-            return False
-        # Postprocessing: Plots Stats
-        if self.args.stats:
-            QgsMessageLog.logMessage('Generating Statistics', MESSAGE_CATEGORY, Qgis.Info)
-            env.stats()
-        #
-        self.setProgress(66.0)
-        if self.isCanceled():
-            return False
-        if self.args.heuristic != -1:
-            QgsMessageLog.logMessage('Generating outputs for heuristics', MESSAGE_CATEGORY, Qgis.Info)
-            env.heur()
-        self.setProgress(100.0)
+        QgsMessageLog.logMessage( 'Task "{}" run method ended'.format( self.description), MESSAGE_CATEGORY, Qgis.Info)
         return True
 
     def finished(self, result):
-        QgsMessageLog.logMessage(
-                'finished',
-                MESSAGE_CATEGORY, Qgis.Success)
         """
         This function is automatically called when the task has
         completed (successfully or not).
@@ -102,14 +102,13 @@ class Cell2FireTask(QgsTask):
                         exception=self.exception),
                         MESSAGE_CATEGORY, Qgis.Critical)
                 raise self.exception
-        enablePrint()
 
     def cancel(self):
+        super().cancel()
         QgsMessageLog.logMessage(
-            'Task "{name}" was canceled'.format(
+            'Task "{name}" cancel signal handled ok'.format(
             name=self.description),
             MESSAGE_CATEGORY, Qgis.Info)
-        super().cancel()
 
 if __name__ == '__main__':
     app = QgsApplication([], True)
