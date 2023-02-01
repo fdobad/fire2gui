@@ -1,4 +1,5 @@
 #!/bin/bash
+# TODO
 # todo test: $1 to install outside the directory
 plugin_name=$(sed -e '/^name=/!d' -e 's/name=//' -e 's/\r//' $1/metadata.txt)
 #plugin_name=$(sed -e '/^name=/!d' -e 's/name=//' -e 's/\r//' metadata.txt)
