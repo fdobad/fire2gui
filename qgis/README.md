@@ -72,7 +72,7 @@ Now you'll see a new menu icon on the right called Fire
 Install QGIS Desktop from the software app
 ```
 # Qt+python
-sudo apt install python3-venv ipython
+sudo apt install python3-venv python3-ipython
 sudo apt install pyqt5-dev pyqt5-dev-tools python3-pyqt5 python3-dbus.mainloop.pyqt5 python3-dbus.mainloop.pyqt5-dbg
 # ugly
 sudo apt install gdal-bin python3-gdal
