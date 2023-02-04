@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/plugins/fire2aammainmodule/">
+        <file>icon.png</file>
+        <file>icon_dev.png</file>
+        <file>camp_fire.gif</file>
+        <file>plug_icon.png</file>
+    </qresource>
+</RCC>

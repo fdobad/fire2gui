@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Fire2aamMainClassDockWidgetBase</class>
+ <widget class="QDockWidget" name="Fire2aamMainClassDockWidgetBase">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>489</width>
+    <height>278</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>cell2fire</string>
+  </property>
+  <widget class="QWidget" name="dockWidgetContents">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="1" column="0">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Hello world! Hello FireResResearchers</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0" colspan="2">
+     <widget class="QTreeWidget" name="treeWidget">
+      <property name="columnCount">
+       <number>3</number>
+      </property>
+      <attribute name="headerVisible">
+       <bool>true</bool>
+      </attribute>
+      <attribute name="headerCascadingSectionResizes">
+       <bool>true</bool>
+      </attribute>
+      <column>
+       <property name="text">
+        <string>Property</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>cmd_name</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Value</string>
+       </property>
+      </column>
+      <item>
+       <property name="text">
+        <string>Weather</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="flags">
+        <set>ItemIsSelectable|ItemIsEditable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled|ItemIsTristate</set>
+       </property>
+       <item>
+        <property name="text">
+         <string>Constant</string>
+        </property>
+        <item>
+         <property name="text">
+          <string># Hrs</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+       </item>
+       <item>
+        <property name="text">
+         <string>ScenariosFolder</string>
+        </property>
+        <item>
+         <property name="text">
+          <string># to sample</string>
+         </property>
+        </item>
+       </item>
+       <item>
+        <property name="text">
+         <string>ForecastFile</string>
+        </property>
+       </item>
+      </item>
+      <item>
+       <property name="text">
+        <string>Landscape</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Fuel</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Elevation</string>
+        </property>
+       </item>
+      </item>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
