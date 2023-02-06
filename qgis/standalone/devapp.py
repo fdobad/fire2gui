@@ -18,21 +18,16 @@ window.setLayout(QtWidgets.QGridLayout())
 tree    = QtWidgets.QTreeWidget()
 #tree.setLayout(QtWidgets.QGridLayout())
 
-def get_parser_added_arguments_2dict(parser):
-    # no groups
+def get_args(parser):
     parser = { a.dest : a.__dict__ for a in Parser()._get_optional_actions() }
     parser.pop('help')
-    #metavars = set( v['metavar'] for k,v in parser.items()) chanta!
+    #metavars = set( v['metavar'] for k,v in parser.items())
     args = { k:None for k in parser.keys() }
-    return args
+    return args #, metavars 
 
-parser = Parser()
-def get_parser_grouped_added_arguments_2dict(parser):
+def get_grouped_parser(parser):
     '''see usr/lib/python39/argparse.py for details
         groups are stored on _action_groups, lines: 1352, 1448
-
-        groups = set( v['metavar'] for k,v in parser.items())
-        args = { k:None for k in parser.keys() }
     '''
     pag = parser.__dict__['_action_groups']
     '''
@@ -44,14 +39,20 @@ def get_parser_grouped_added_arguments_2dict(parser):
     for p in pag[2:]:
         r = p.__dict__
         q[r['title']] = r['_group_actions']
-
-    s = {}
+    groups = set(q.keys())
+    # normalize 
+    args = {}
     for k,v in q.items():
-        s[k] =  { a.dest : a.__dict__ for a in v }
-        s[k]['group'] = k
+        for w in v:
+            x = w.__dict__
+            args[x['dest']] = x  
+            args[x['dest']].pop( 'container')
+            args[x['dest']].update({ 'group' : k})
 
-    return s
-
+    return args, groups
+parser = Parser()
+parser, groups = get_grouped_parser(parser)
+args = { g:None for g in groups }
 
 def slot_currentItemChanged(itemAfter,itemBefore):
     if itemBefore is None:
@@ -61,6 +62,9 @@ def slot_currentItemChanged(itemAfter,itemBefore):
     print(itemBefore.text(0),itemBefore.text(2),sep='\t')
 
 def slot_itemActivated(*args, **kwargs):
+    ''' user open/closed a folded group
+        item, column = args
+    '''
     print('\nslot_itemActivated','args',args,'kwargs',kwargs,sep='\t')
 
 def slot_itemChanged(item, column):
@@ -69,21 +73,23 @@ def slot_itemChanged(item, column):
         print(item.text(0),column, item.text(2))
     '''
     global args
+    if column != 2:
+        return
     # value is string
     key, value = item.text(0), item.text(2)
-    if column != 2 or key not in args.keys():
+    if key not in args.keys():
         return
     antes=args[key]
-    if parser['type'] is str:
-        args[k] = value
-    elif parser['type'] is int:
-        args[k] = int(value)
-    elif parser['type'] is float:
-        args[k] = float(value)
-    elif parser['type'] is None and value == 'True':
-        args[k] = True
-    elif parser['type'] is None and value == 'False':
-        args[k] = False
+    if parser[key]['type'] is str:
+        args[key] = value
+    elif parser[key]['type'] is int:
+        args[key] = int(value)
+    elif parser[key]['type'] is float:
+        args[key] = float(value)
+    elif parser[key]['type'] is None and value == 'True':
+        args[key] = True
+    elif parser[key]['type'] is None and value == 'False':
+        args[key] = False
     else:
         raise NotImplementedError
     print('antes',antes,'despues',args[key],sep='\t')
@@ -105,30 +111,53 @@ def slot_itemClicked(item, column):
         Unchecked           0 The item is unchecked.
 
         def slot_itemClicked(*args, **kwargs):
-            global args
             print('\nitemClicked','args',args,'kwargs',kwargs,sep='\t')
             item, column = args
     '''
     global args
+    if column != 0:
+        return
     # value is string
     key, value = item.text(0), item.text(2)
     #print(key, value, column, item.checkState(0))
-    if column != 0:
-        return
-    if key in metavars:
-        # TODO activar hartos
-        return
-    antes=args[key]
-    if parser[key]['type'] is None:
-        if item.checkState(0)==2: # checked
-            args[key] = True
-            item.setText(2,'True')
-        if item.checkState(0)==0: # checked
-            args[key] = False
-            item.setText(2,'False')
-    print('antes',antes,'despues',args[key],sep='\t')
+    if key in groups:
+        parent = item
+        group = key
+        value = item.checkState(0)
+        print('parent:',parent,'group:',group,'value:',value)
+        iterator = QtWidgets.QTreeWidgetItemIterator(tree)
+        item: QtWidgets.QTreeWidgetItem = iterator.value()
+        while item is not None:
+            key = item.text(0)
+            if key in groups:
+                pass
+            elif parser[key]['group'] == group and parser[key]['type'] is None:
+                if value == 2:
+                    item.setText(2, 'True')
+                    args[key] = True
+                elif value == 0:
+                    item.setText(2, 'False')
+                    args[key] = False
+                else:
+                    print('do nothin')
+            else:
+                pass
+            iterator += 1
+            item = iterator.value()
+    else:
+        antes=args[key]
+        if parser[key]['type'] is None:
+            if item.checkState(0) == 2:
+                args[key] = True
+                item.setText(2,'True')
+            if item.checkState(0) == 0:
+                args[key] = False
+                item.setText(2,'False')
+        print('antes',antes,'despues',args[key],sep='\t')
 
 def slot_itemSelectionChanged(*args, **kwargs):
+    '''
+    '''
     print('\nitemSelectionChanged','args',args,'kwargs',kwargs,sep='\t')
 
 def main():
@@ -140,37 +169,39 @@ def main():
     window.setWindowTitle("Auto python argparse app")
     tree.setHeaderLabels(['dest','option_strings[0]','default->args.dest=value','type','help'])
 
+    #for group in groups:
+    #    for key,val in args.items():
+    #        if val['group'] == group:
+    #            print(group,key,val['group'] )
+
     tree.setColumnCount(5)
-    for meta in metavars:
+    for group in groups:
         parent = QtWidgets.QTreeWidgetItem(tree)
-        parent.setText(0, "{}".format(meta))
+        parent.setText(0, group)
         parent.setFlags(parent.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
-        if meta is None:
-            parent.setExpanded(False)
-        else:
-            parent.setExpanded(True)
+        #if group is None:
+        #    parent.setExpanded(False)
+        #else:
+        #    parent.setExpanded(True)
         for key,val in parser.items():
-            if val['metavar']== meta:
+            if val['group'] == group:
                 child = QtWidgets.QTreeWidgetItem(parent)
                 child.setFlags(child.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsEditable)
-                child.setText(0, "{}".format(val['dest']))
-                child.setText(1,val['option_strings'][0])
-                #if val['type'] is None:
-                #    child.setText(3,'bool (None)'))
-                #else:
-                #    child.setText(3,str(val['type']))
-                child.setText(3,str(val['type']))
-                child.setText(4,val['help'])
+                child.setText(0, str(val['dest']             ))
+                child.setText(1, str(val['option_strings'][0]))
+                child.setText(3, str(val['type']))
+                child.setText(4, str(val['help']))
+                # 2
                 child.setCheckState(0, Qt.Unchecked)
-                if isinstance(val['default'], bool):
+                if val['type'] is None:
                     if val['default'] == True:
                         child.setCheckState(0, Qt.Checked)
-                        args[key]=True
+                        args[key] = True
                     if val['default'] == False:
                         child.setCheckState(0, Qt.Unchecked)
-                        args[key]=False
-                child.setText(2,str(val['default']))
-                args[key]=val['default']
+                        args[key] = False
+                child.setText(2, str(val['default']))
+                args[key] = str(val['default'])
                 child.setHidden(False)
 
     tree.currentItemChanged.connect(slot_currentItemChanged)
@@ -184,6 +215,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
     '''
 def slot(*args, **kwargs):
     print('slot_','args',args,'kwargs',kwargs,sep='\t')
@@ -201,9 +233,7 @@ def slot(*args, **kwargs):
     args[itemChanged.text(0)] = itemChanged.text(2)
     ns = Namespace(**args)
     print(itemChanged.text(0) ,itemChanged.text(2), ns, sep='\n')
-    '''
 
-    '''
     for k,v in pars.items():
         item = QtWidgets.QTreeWidgetItem(tree)
         print(v['dest'])
