@@ -22,14 +22,14 @@ def Parser():
     '''
     parser = ArgumentParser()
 
-    folders     = parser.add_argument_group(title='folders')
-    landscape   = parser.add_argument_group(title='landscape')
-    weather     = parser.add_argument_group(title='weather')
-    fire        = parser.add_argument_group(title='fire')
-    firebreak   = parser.add_argument_group(title='firebreak')
-    simulation  = parser.add_argument_group(title='simulation')
-    heuristic   = parser.add_argument_group(title='heuristic')
-    output   = parser.add_argument_group(title='output')
+    folders     = parser.add_argument_group(title='Instance directory')
+    landscape   = parser.add_argument_group(title='Landscape')
+    weather     = parser.add_argument_group(title='Weather')
+    fire        = parser.add_argument_group(title='Fire')
+    firebreak   = parser.add_argument_group(title='Firebreak')
+    simulation  = parser.add_argument_group(title='Simulation')
+    heuristic   = parser.add_argument_group(title='Heuristic')
+    output      = parser.add_argument_group(title='Outputs')
 
     # Folders 
     folders.add_argument("--input-instance-folder",
@@ -106,7 +106,7 @@ def Parser():
                         dest="messages_path",
                         type=str,
                         default=None)
-    parser.add_argument("--GASelection",
+    heuristic.add_argument("--GASelection",
                         help="Use the genetic algorithm instead of greedy selection when calling the heuristic",
                         dest="GASelection",
                         default=False,
@@ -131,7 +131,7 @@ def Parser():
                         dest="TFraction",
                         type=float,
                         default=1.0)
-    parser.add_argument("--GPTree",
+    heuristic.add_argument("--GPTree",
                         help="Use the Global Propagation tree for calculating the VaR and performing the heuristic plan",
                         dest="GPTree",
                         default=False,
@@ -141,7 +141,7 @@ def Parser():
                         dest="valueFile",
                         type=str,
                         default=None)
-    parser.add_argument("--noEvaluation",
+    firebreak.add_argument("--noEvaluation",
                         help="Generate the treatment plans without evaluating them",
                         dest="noEvaluation",
                         default=False,
@@ -299,70 +299,70 @@ def Parser():
     
     
     # Floats
-    parser.add_argument("--Fire-Period-Length",
+    fire.add_argument("--Fire-Period-Length",
                         help="Fire Period length in minutes (needed for ROS computations). Default 60",
                         dest="input_PeriodLen",
                         type=float,
                         default=60)                    
-    parser.add_argument("--Weather-Period-Length",
+    weather.add_argument("--Weather-Period-Length",
                         help="Weather Period length in minutes (needed weather update). Default 60",
                         dest="weather_period_len",
                         type=float,
                         default=60)                    
-    parser.add_argument("--ROS-Threshold",
+    fire.add_argument("--ROS-Threshold",
                         help="A fire will not start or continue to burn in a cell if the head ros\
                              is not above this value (m/min) default 0.1.",
                         dest="ROS_Threshold",
                         type=float,
                         default=0.1)                    
-    parser.add_argument("--HFI-Threshold",
+    fire.add_argument("--HFI-Threshold",
                         help="A fire will not start or continue to burn in a cell if the HFI is \
                               not above this value (Kw/m) default is 10.",
                         dest="HFI_Threshold",
                         type=float,
                         default=0.1)                    
-    parser.add_argument("--ROS-CV",
+    fire.add_argument("--ROS-CV",
                         help="Coefficient of Variation for normal random ROS (e.g. 0.13), \
                               but default is 0 (deteriministic)",
                         dest="ROS_CV",
                         type=float,
                         default=0.0)                    
-    parser.add_argument("--HFactor",
+    fire.add_argument("--HFactor",
                         help="Adjustement factor: HROS",
                         dest="HFactor",
                         type=float,
                         default=1.0)
-    parser.add_argument("--FFactor",
+    fire.add_argument("--FFactor",
                         help="Adjustement factor: FROS",
                         dest="FFactor",
                         type=float,
                         default=1.0)
-    parser.add_argument("--BFactor",
+    fire.add_argument("--BFactor",
                         help="Adjustement factor: BROS",
                         dest="BFactor",
                         type=float,
                         default=1.0)
-    parser.add_argument("--EFactor",
+    fire.add_argument("--EFactor",
                         help="Adjustement ellipse factor",
                         dest="EFactor",
                         type=float,
                         default=1.0)
-    parser.add_argument("--BurningLen",
+    fire.add_argument("--BurningLen",
                         help="Burning length period (periods a cell is burning)",
                         dest="BurningLen",
                         type=float,
                         default=-1.0)
-    parser.add_argument("--ROS10Factor",
+    fire.add_argument("--ROS10Factor",
                         help="FM10 Crown Fire factor",
                         dest="ROS10Factor",
                         type=float,
                         default=3.34)   
-    parser.add_argument("--CCFFactor",
+    fire.add_argument("--CCFFactor",
                         help="CCF Crown Fire factor",
                         dest="CCFFactor",
                         type=float,
                         default=0.0)   
-    parser.add_argument("--CBDFactor",
+    fire.add_argument("--CBDFactor",
                         help="CBD Crown Fire factor",
                         dest="CBDFactor",
                         type=float,

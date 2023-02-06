@@ -8,16 +8,10 @@ import sys
 import pickle
 from argparse import Namespace
 from ParseInputs import Parser
-import pyperclip
 
-'''
-def q2b(q):
-    if q==0:
-        return False
-    elif q==2:
-        return True
-    else:
-        raise TypeError
+app    = QtWidgets.QApplication(sys.argv)
+window = QtWidgets.QMainWindow()
+tree   = QtWidgets.QTreeWidget()
 
 def get_args(parser):
     parser = { a.dest : a.__dict__ for a in Parser()._get_optional_actions() }
@@ -25,14 +19,6 @@ def get_args(parser):
     #metavars = set( v['metavar'] for k,v in parser.items())
     args = { k:None for k in parser.keys() }
     return args #, metavars 
-
-from PyQt5.QtCore import QProcess
-self = qMainWindow
-def runExternalProcess():
-    self.message("Executing process.")
-    self.p = QProcess()  # Keep a reference to the QProcess (e.g. on self) while it's running.
-    self.p.start("python3", ['dummy_script.py'])
-'''
 
 def get_grouped_parser(parser):
     '''see usr/lib/python39/argparse.py for details
@@ -59,37 +45,34 @@ def get_grouped_parser(parser):
             args[x['dest']].update({ 'group' : k})
 
     return args, groups
+parser = Parser()
+parser, groups = get_grouped_parser(parser)
+args = { g:None for g in groups }
 
 def slot_currentItemChanged(itemAfter,itemBefore):
-    '''
     if itemBefore is None:
         print(itemAfter.text(0), itemAfter.text(2),sep='\t')
         return
     print(itemAfter.text(0), itemAfter.text(2),sep='\t')
     print(itemBefore.text(0),itemBefore.text(2),sep='\t')
-    '''
-    print('\tcurrentItemChanged',end='\t')
 
 def slot_itemActivated(*args, **kwargs):
     ''' user open/closed a folded group
-    print('slot_itemActivated','args',args,'kwargs',kwargs,sep='\t')
-    item, column = args
+        item, column = args
     '''
-    print('\titemActivated',end='\t')
+    print('\nslot_itemActivated','args',args,'kwargs',kwargs,sep='\t')
 
 def slot_itemChanged(item, column):
     '''
         print('\nitemChanged','args',args,'kwargs',kwargs,sep='\t')
         print(item.text(0),column, item.text(2))
     '''
-    #print('\titemChanged col',column,end='\t')
-    global args, groups, parser, text
-    #if column != 2:
-    #    return
+    global args
+    if column != 2:
+        return
     # value is string
     key, value = item.text(0), item.text(2)
-    if key in groups:
-        #print('ich group',key,value,column)
+    if key not in args.keys():
         return
     antes=args[key]
     if parser[key]['type'] is str:
@@ -104,11 +87,15 @@ def slot_itemChanged(item, column):
         args[key] = False
     else:
         raise NotImplementedError
-    #print('antes',antes,'despues',args[key],sep='\t')
-    print('end itemChanged',key,value,column)
-    cmd = gen_cmd()
-    if clipboard_checkBox.isChecked():
-        pyperclip.copy(cmd)
+    print('antes',antes,'despues',args[key],sep='\t')
+
+def q2b(q):
+    if q==0:
+        return False
+    elif q==2:
+        return True
+    else:
+        raise TypeError
 
 def slot_itemClicked(item, column):
     '''CheckState
@@ -122,8 +109,7 @@ def slot_itemClicked(item, column):
             print('\nitemClicked','args',args,'kwargs',kwargs,sep='\t')
             item, column = args
     '''
-    print('\titemClicked',end='\t')
-    global args, groups, parser, tree, text
+    global args
     if column != 0:
         return
     # value is string
@@ -133,7 +119,7 @@ def slot_itemClicked(item, column):
         parent = item
         group = key
         value = item.checkState(0)
-        #print('parent:',parent,'group:',group,'value:',value)
+        print('parent:',parent,'group:',group,'value:',value)
         iterator = QtWidgets.QTreeWidgetItemIterator(tree)
         item: QtWidgets.QTreeWidgetItem = iterator.value()
         while item is not None:
@@ -162,19 +148,27 @@ def slot_itemClicked(item, column):
             if item.checkState(0) == 0:
                 args[key] = False
                 item.setText(2,'False')
-        #print('antes',antes,'despues',args[key],sep='\t')
-    cmd = gen_cmd()
-    if clipboard_checkBox.isChecked():
-        pyperclip.copy(cmd)
+        print('antes',antes,'despues',args[key],sep='\t')
 
 def slot_itemSelectionChanged(*args, **kwargs):
-    #print('\nitemSelectionChanged','args',args,'kwargs',kwargs,sep='\t')
-    print('\nitemSelectionChanged',end='\t')
+    '''
+    '''
+    print('\nitemSelectionChanged','args',args,'kwargs',kwargs,sep='\t')
 
-def init_Tree(tree):
-    global args, groups, parser
-    tree.AdjustToContentsOnFirstShow
+def main():
+    global app
+    global window
+    global tree
+    global args
+
+    window.setWindowTitle("Auto python argparse app")
     tree.setHeaderLabels(['dest','option_strings[0]','default->args.dest=value','type','help'])
+
+    #for group in groups:
+    #    for key,val in args.items():
+    #        if val['group'] == group:
+    #            print(group,key,val['group'] )
+
     tree.setColumnCount(5)
     for group in groups:
         parent = QtWidgets.QTreeWidgetItem(tree)
@@ -204,136 +198,22 @@ def init_Tree(tree):
                 child.setText(2, str(val['default']))
                 args[key] = str(val['default'])
                 child.setHidden(False)
-    return tree
 
-def slot_buttonGroupClicked(*args, **kwargs):
-    print('buttonGroupClicked:','args',args,'kwargs',kwargs,sep='\t')
-
-def init_ButtonGroup(button_group):
-    '''        button1.setFont(QtGui.QFont("Sanserif", 15))
-        button1.setIcon(QtGui.QIcon("pythonicon.png"))
-    '''
-    button_sav = QtWidgets.QPushButton('Save')
-    button_loa = QtWidgets.QPushButton('Load')
-    button_abo = QtWidgets.QPushButton('Abort')
-    button_run = QtWidgets.QPushButton('Run') 
-    button_group.addButton(button_run, id=1)
-    button_group.addButton(button_abo, id=2)
-    button_group.addButton(button_sav, id=3)
-    button_group.addButton(button_loa, id=4)
-    h_layout = QtWidgets.QHBoxLayout()
-    h_layout.addWidget(button_loa)
-    h_layout.addWidget(button_sav)
-    h_layout.addWidget(button_abo)
-    h_layout.addWidget(button_run)
-    return button_group,h_layout
-
-def gen_cmd():
-    global args, parser, tree, text, clipboard_checkBox
-    #print('\tgen_cmd',end='\t')
-    cmd='python main.py '
-    iterator = QtWidgets.QTreeWidgetItemIterator(tree)
-    item: QtWidgets.QTreeWidgetItem = iterator.value()
-    while item is not None:
-        key = item.text(0)
-        if key in groups or item.checkState(0)==0:
-            pass
-        elif parser[key]['type'] is None:
-            cmd += parser[key]['option_strings'][0] + ' '
-        else:
-            cmd += parser[key]['option_strings'][0] + ' ' + str(args[key]) + ' '
-        iterator += 1
-        item = iterator.value()
-    text.setPlainText(cmd)
-    return cmd
-
-def main():
-    global args, groups, parser, tree, text, clipboard_checkBox
-
-    parser, groups = get_grouped_parser(Parser())
-    args = { dest:parser[dest]['default'] for dest in parser.keys() }
-
-    app      = QtWidgets.QApplication(sys.argv)
-    widget   = QtWidgets.QWidget()
-    v_layout = QtWidgets.QVBoxLayout()
-    
-    # text browser
-    text = QtWidgets.QTextBrowser()
-    fm = text.fontMetrics()
-    text.setMinimumHeight(fm.height())
-    text.setMaximumHeight(4*fm.height())
-    text.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents)
-    text.setSizePolicy( QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.MinimumExpanding)
-    v_layout.addWidget(text)
-    '''
-        text.setPlainText("hello world\n bye !\n bye !\n bye !\n bye !")
-        text.setPlaceholderText("hello world\n bye !\n bye !\n bye !\n bye !")
-        text.setPlainText("hello world\n bye !\n bye !\n bye !\n bye !")
-        QFontMetrics fm(text->font());
-        QString myText = text->toPlainText();
-        int calcWidth = fm.width(myText);
-        int calcHeight = fm.height(myText);
-    '''
-
-    # tree
-    tree = QtWidgets.QTreeWidget()
-    tree = init_Tree(tree)
-    v_layout.addWidget(tree)
-
-    # CheckBox browser
-    clipboard_checkBox = QtWidgets.QCheckBox('put generated command on system clipboard')
-    v_layout.addWidget( clipboard_checkBox)
-    
-    # buttons
-    button_group = QtWidgets.QButtonGroup()
-    button_group, button_group_layout = init_ButtonGroup(button_group )
-    v_layout.addLayout( button_group_layout)
-
-    # connnections
-    # tree
     tree.currentItemChanged.connect(slot_currentItemChanged)
     tree.itemActivated.connect(slot_itemActivated)
     tree.itemChanged.connect(slot_itemChanged)
     tree.itemClicked.connect(slot_itemClicked)
     tree.itemSelectionChanged.connect(slot_itemSelectionChanged)
-    # 
-    button_group.buttonClicked[int].connect(slot_buttonGroupClicked)
-    # 
-    
-    # mild consistency check
-    if any( g in args.keys() for g in groups):
-        offenders = [ g for g in groups if g in args.keys() ]
-        text.setPlainText('ERROR: Group name (parser_group.title) in args.dest names:\n\t'\
-                            + str(offenders)\
-                            +'\nCorrect in ParseInputs.py file')
-    else:
-        gen_cmd()
-
-    widget.setLayout(v_layout)
-    # who shows
-    show = 'window'
-    if show == 'widget':
-        widget.show()
-        sys.exit(app.exec_())
-    elif show == 'window':
-        window = QtWidgets.QMainWindow()
-        window.setCentralWidget(widget)
-        window.setWindowTitle("Auto Argparse App")
-        window.show()
-        sys.exit(app.exec_())
-    else:
-        print('show what?')
-        raise SyntaxError 
+    tree.AdjustToContentsOnFirstShow
+    tree.show()
+    sys.exit(app.exec_())
 
 if __name__ == '__main__':
     main()
+
     '''
-    for group in groups:
-        for key,val in args.items():
-            if val['group'] == group:
-                print(group,key,val['group'] )
-    def slot(*args, **kwargs):
-        print('slot_','args',args,'kwargs',kwargs,sep='\t')
+def slot(*args, **kwargs):
+    print('slot_','args',args,'kwargs',kwargs,sep='\t')
 
     tree    = QtWidgets.QTreeWidget()
     getSelected = tree.currentItem()
@@ -366,7 +246,4 @@ if __name__ == '__main__':
             child.setFlags(child.flags() | Qt.ItemIsUserCheckable)
             child.setText(0, "Child {}".format(x))
             child.setCheckState(0, Qt.Unchecked)
-
-    dialog_button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Yes|QtWidgets.QDialogButtonBox.No)
-    v_layout.addWidget(dialog_button_box )
     '''
