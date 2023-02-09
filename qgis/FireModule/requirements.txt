@@ -1,0 +1,12 @@
+numpy
+pandas
+matplotlib
+seaborn
+imread
+tqdm
+
+networkx
+rasterio
+scipy
+deap
+pyperclip
