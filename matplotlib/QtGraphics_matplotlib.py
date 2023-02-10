@@ -1,4 +1,4 @@
-#REPLENV: /home/fdo/pyenv/qgis
+#REPLENV: /home/fdo/pyenv/dev
 import numpy as np
 import sys
 
@@ -56,7 +56,7 @@ def addDynamicCanvas(layout, v : int = 1):
     layout.addWidget(dynamic_canvas)
     dynamic_ax = dynamic_canvas.figure.subplots()
     dynamic_ax.set(xlabel='time (s)', ylabel='voltage (mV)',
-           title='Dynamic Canvas v%s -- About as simple as it gets, folks'%v)
+    title='Dynamic Canvas v%s -- About as simple as it gets, folks'%v)
     t = np.linspace(0, 10, 101)
     # Set up a Line2D.
     line, = dynamic_ax.plot(t, np.sin(t + time.time()))
@@ -67,7 +67,6 @@ def addDynamicCanvas(layout, v : int = 1):
         timer.start()
     if v == 2:
         drawid = dynamic_canvas.mpl_connect('draw_event', start_timer)
-
 
 def buildWidgetApp():
     # Check whether there is already a running QApplication (e.g., if running from an IDE).
