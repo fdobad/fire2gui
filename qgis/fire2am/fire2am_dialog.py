@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #REPLENV: /home/fdo/pyenv/qgis
-"""
+'''
 /***************************************************************************
  fire2amClassDialog
                                  A QGIS plugin
@@ -21,73 +22,70 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-"""
-
-import os
-
+'''
+from qgis.gui import QgsMessageBar
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
-from qgis.PyQt.QtCore import QObject
-from qgis.PyQt import QtCore
-from qgis.PyQt import QtGui
+from qgis.PyQt.QtCore import QEvent, Qt
+from qgis.PyQt.QtGui import QKeySequence
+
+from .fire2am_utils import PandasModel, MatplotlibModel
+
+from multiprocessing import cpu_count
+import os,csv, io
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'fire2am_dialog_base.ui'))
-# interactive
-#os.getcwd(), 'fire2am_dialog_base.ui'))
-#from qgis.core import QgsApplication
-#app = QgsApplication([], True)
-#dlg = fire2amClassDialog()
-# debug
+'''if Interactive.'''
+'''
+os.getcwd(), 'fire2am_dialog_base.ui'))
+from qgis.core import QgsApplication
+app = QgsApplication([], True)
+dlg = fire2amClassDialog()
+'''
+'''if Debug'''
+'''
 import pdb
 from qgis.PyQt.QtCore import pyqtRemoveInputHook
-
-from multiprocessing import cpu_count
-from .fire2am_utils import PandasModel, MatplotlibModel
-
-import csv, io
+    pyqtRemoveInputHook()
+    pdb.set_trace()
+    #(Pdb) !import code; code.interact(local=vars())
+'''
 
 class fire2amClassDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
-        """Constructor."""
+        '''Constructor.'''
         super(fire2amClassDialog, self).__init__(parent)
-        # Set up the user interface from Designer through FORM_CLASS.
-        # After self.setupUi() you can access any designer object by doing
-        # self.<objectname>, and you can use autoconnect slots - see
-        # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
-        # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+        '''Customize.'''
+
+        self.setWindowFlags( Qt.WindowCloseButtonHint | Qt.WindowMaximizeButtonHint)
+        self.msgBar = QgsMessageBar()
+        self.msgBar.setSizePolicy( QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Fixed )
+        self.layout().addWidget(self.msgBar) # at the end: .insertRow . see qformlayout
         self.spinBox_nsims.setValue(cpu_count())
-        self.df = None
         self.PandasModel = PandasModel
-        #self.tableView_1.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
-        #self.tableView_2.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         self.tableView_1.installEventFilter(self)
         self.tableView_2.installEventFilter(self)
+        #self.tableView_1.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        #self.tableView_2.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
 
     def eventFilter(self, source, event):
         if isinstance(source, QtWidgets.QTableView):
-            if event.type() == QtCore.QEvent.KeyPress:
-                if event.matches(QtGui.QKeySequence.Copy):
+            if event.type() == QEvent.KeyPress:
+                if event.matches(QKeySequence.Copy):
                     self.copySelection(source)
                     return True
-                '''
-                if event.matches(QtGui.QKeySequence.Paste):
+                '''TBD
+                if event.matches(QKeySequence.Paste):
                     self.pasteSelection()
                     return True
                 '''
         return super(fire2amClassDialog, self).eventFilter(source, event)
 
     def copySelection(self, fromTable):
-        '''event source not available so check for EACH visible table
-        '''
-        print('fromTable',fromTable)
         selection = fromTable.selectedIndexes()
-        #if self.tableView_1.isVisible():
-        #    selection = self.tableView_1.selectedIndexes()
-        #if self.tableView_2.isVisible():
-        #    selection = self.tableView_2.selectedIndexes()
         if selection:
             rows = sorted(index.row() for index in selection)
             columns = sorted(index.column() for index in selection)
@@ -101,16 +99,9 @@ class fire2amClassDialog(QtWidgets.QDialog, FORM_CLASS):
             stream = io.StringIO()
             csv.writer(stream, delimiter='\t').writerows(table)
             QtWidgets.qApp.clipboard().setText(stream.getvalue())
-            print('to clipboard:\n',stream.getvalue())
         return
 
-    '''
-                pyqtRemoveInputHook()
-                pdb.set_trace()
-                #(Pdb) !import code; code.interact(local=vars())
-    '''
-    '''
-    TBD
+    '''TBD
     def pasteSelection(self):
         selection = self.selectedIndexes()
         if selection:

@@ -1,7 +1,10 @@
-#!python3
+#!/usr/bin/env python3
 #REPLENV: /home/fdo/pyenv/qgis
 from pandas import DataFrame, Series
 import numpy as np
+
+'''CONSTANTS'''
+aName = 'fire2am'
 
 from qgis.PyQt.QtWidgets import QGraphicsScene, QGraphicsProxyWidget, QWidget, QVBoxLayout
 from matplotlib.backends.backend_qtagg import FigureCanvas, NavigationToolbar2QT as NavigationToolbar
@@ -39,29 +42,21 @@ class PandasModel(QAbstractTableModel):
         self._data = data
 
     def rowCount(self, parent=None):
-        return len(self._data.values)
+        return self._data.shape[0]
 
     def columnCount(self, parent=None):
-        return self._data.columns.size
+        return self._data.shape[1]
 
     def data(self, index, role=Qt.DisplayRole):
         if index.isValid():
             if role == Qt.DisplayRole:
-                return QVariant(str(
-                    self._data.values[index.row()][index.column()]))
-        return QVariant()
+                return QVariant(str(self._data.iloc[index.row(), index.column()]))
+        return None
 
-'''
-qabstractitemview.SelectionMode ENUMS:
-    ContiguousSelection
-    ExtendedSelection
- 2->MultiSelection
-    NoSelection
-    SingleSelection
-class PieView : public QAbstractItemView
-{
-    void setSelection(const QRect&, QItemSelectionModel::SelectionFlags command) override;
-'''
+    def headerData(self, col, orientation, role):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self._data.columns[col]
+        return None
 
 def randomNames(n=8, l=4):
     '''
@@ -81,9 +76,8 @@ def randomDataFrame(rows=8, cols=4, dtype=float):
         data =           np.random.randint(99, size=(rows,cols))
     else:
         raise NotImplementedError
-    columns = map( chr, np.random.randint(97,123,size=cols))
-    df = DataFrame( data, columns=columns)
-    df.insert( 0, randomNames(1,4)[0], Series(randomNames(rows,4)))
+    df = DataFrame( data, columns=randomNames(cols,3))
+    df.insert( 0, randomNames(1,6)[0], Series(randomNames(rows,4)))
     return df
 
 def safe_cast(val, to_type, default=None):
@@ -98,4 +92,38 @@ def safe_cast_ok(val, to_type, default=None):
     except (ValueError, TypeError):
         return default, False
 
+def check(obj,key):
+    return hasattr(obj, key) and callable(getattr(obj, key))
+
+def get_params(Parser):
+    ''' get an argparse object that has groups '''
+    parser, groups = get_grouped_parser(Parser())
+    args = { dest:parser[dest]['default'] for dest in parser.keys() }
+    return args, parser, groups
+
+def get_grouped_parser(parser):
+    '''see usr/lib/python39/argparse.py for details
+        groups are stored on _action_groups, lines: 1352, 1448
+    '''
+    pag = parser.__dict__['_action_groups']
+    '''
+        p[0]['title'] : 'positional' 
+        p[1]['title'] : 'optional arguments'
+        p[2:]['title'] : groups
+    '''
+    q = {}
+    for p in pag[2:]:
+        r = p.__dict__
+        q[r['title']] = r['_group_actions']
+    groups = set(q.keys())
+    # normalize 
+    args = {}
+    for k,v in q.items():
+        for w in v:
+            x = w.__dict__
+            args[x['dest']] = x  
+            args[x['dest']].pop( 'container')
+            args[x['dest']].update({ 'group' : k})
+
+    return args, groups
 

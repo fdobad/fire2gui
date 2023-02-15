@@ -3,7 +3,7 @@ __QGIS plugin development shitsheet__
 '''
 # get the ignition point in a layer
 layers_byName = { l.name():l for l in QgsProject.instance().mapLayers().values() }
-il = layers_byName['ignition']
+il = layers_byName['ignitions']
 [ f for f in il.getFeatures()][0].geometry()
 
 # qgis console has this preloaded
@@ -71,3 +71,12 @@ lyr.selectionChanged.connect(myFunction)
 QgsMessageLog.logMessage("Your plugin code has been executed correctly", 'FirePlugin', level=Qgis.Info)
 QgsMessageLog.logMessage("Your plugin code might have some problems", 'FirePlugin', level=Qgis.Warning)
 QgsMessageLog.logMessage("Your plugin code has crashed!", 'FirePlugin', level=Qgis.Critical)
+
+# from qgis.gui import QgsMessageBar
+# self.iface.messageBar.
+pushMessage ~ pushSuccess, pushInfo, pushWarning, pushCritical
+
+# qgs groups
+MyFirstGroup = iface.legendInterface().addGroup('Group No. 1')
+MySecondGroup = iface.legendInterface().addGroup('Group No. 2', true, MyFirstGroup)
+

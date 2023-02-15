@@ -13,11 +13,11 @@
   <property name="windowTitle">
    <string>Fire Simulator Analytics Management</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>4</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab_landscape">
       <attribute name="title">
@@ -82,7 +82,7 @@
       </attribute>
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="3" column="0">
-        <widget class="QRadioButton" name="radioButton_weatherConstant">
+        <widget class="QRadioButton" name="radioButton_weatherFile">
          <property name="text">
           <string>Single .csv file</string>
          </property>
@@ -112,7 +112,7 @@ Rate of Spread</string>
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QRadioButton" name="radioButton_weatherFile">
+        <widget class="QRadioButton" name="radioButton_weatherConstant">
          <property name="text">
           <string>Constant</string>
          </property>
@@ -128,7 +128,7 @@ Rate of Spread</string>
        <item row="1" column="1">
         <widget class="QGroupBox" name="groupBox">
          <property name="title">
-          <string>Wind direction and speed builder:</string>
+          <string>Wind direction (deg°) and speed (km/h) builder:</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_5">
           <item row="1" column="1">
@@ -235,7 +235,11 @@ Rate of Spread</string>
         </widget>
        </item>
        <item row="4" column="1">
-        <widget class="QgsFileWidget" name="mQgsFileWidget_weatherFolder"/>
+        <widget class="QgsFileWidget" name="mQgsFileWidget_weatherFolder">
+         <property name="storageMode">
+          <enum>QgsFileWidget::GetDirectory</enum>
+         </property>
+        </widget>
        </item>
        <item row="0" column="0">
         <widget class="QRadioButton" name="radioButton_weatherRandom">
@@ -268,7 +272,7 @@ Rate of Spread</string>
         <widget class="QgsMapLayerComboBox" name="mMapLayerComboBox_ignitionProbMap"/>
        </item>
        <item row="0" column="0">
-        <widget class="QRadioButton" name="radioButton_ignintionRandom">
+        <widget class="QRadioButton" name="radioButton_ignitionRandom">
          <property name="text">
           <string>Random point</string>
          </property>
@@ -438,13 +442,16 @@ Rate of Spread</string>
      </widget>
     </widget>
    </item>
-   <item row="1" column="0">
+   <item>
     <widget class="QDialogButtonBox" name="button_box">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="standardButtons">
       <set>QDialogButtonBox::Apply|QDialogButtonBox::Reset|QDialogButtonBox::RestoreDefaults</set>
+     </property>
+     <property name="centerButtons">
+      <bool>false</bool>
      </property>
     </widget>
    </item>
@@ -557,6 +564,22 @@ Rate of Spread</string>
     <hint type="destinationlabel">
      <x>441</x>
      <y>189</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>toolButton_prev</sender>
+   <signal>clicked()</signal>
+   <receiver>graphicsView</receiver>
+   <slot>update()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>31</x>
+     <y>389</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>348</x>
+     <y>210</y>
     </hint>
    </hints>
   </connection>
