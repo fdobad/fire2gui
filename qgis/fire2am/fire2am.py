@@ -22,21 +22,22 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QTimer
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtTest import QTest
 from qgis.PyQt.Qt import Qt
-from qgis.core import QgsProject, Qgis, QgsWkbTypes, QgsMapLayerType #QgsMessageLog, QgsApplication, QgsTask
+from qgis.core import QgsProject, Qgis, QgsWkbTypes, QgsMapLayerType, QgsFeatureRequest#, QgsMessageLog , QgsApplication, QgsTask
 
 # Initialize Qt resources from file resources.py
 from .img.resources import *
 # Import the code for the dialog
 from .fire2am_dialog import fire2amClassDialog
 from .fire2am_argparse import fire2amClassDialogArgparse
-from .fire2am_utils import randomDataFrame, MatplotlibModel, check, aName
+from .fire2am_utils import (    randomDataFrame, MatplotlibModel, check, aName, log, 
+                                getVectorLayerStuff, pixelstopolygons, addautoincrementalfield, add2dIndex , addXYcentroid)
 
-from pandas import DataFrame
+from pandas import DataFrame, read_csv
 from datetime import datetime, timedelta
 from shutil import copy
 from glob import glob
@@ -91,9 +92,17 @@ class fire2amClass:
         self.first_start_argparse = None
         #
         self.project = None
-        self.uiargs = {}
+        self.layer = {}
+        self.layers_byName = {}
         self.plt = MatplotlibModel()
+        self.InFolder = None
         # TODO track slots self.conn_id = { i:{} for i in range(5)}
+        self.uiargs = {}
+
+        self.timer_weatherFile = QTimer()
+        self.timer_weatherFile.setSingleShot(True)
+        self.timer_weatherFolder = QTimer()
+        self.timer_weatherFolder.setSingleShot(True)
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -238,28 +247,37 @@ class fire2amClass:
         if self.first_start_dialog == True:
             self.first_start_dialog  = False
             self.dlg = fire2amClassDialog()
-            # args
-            self.initUiArgsKeys()
             # project
             self.project = QgsProject().instance()
             # connections
             self.dlg.button_box.clicked.connect(self.slot_button_box_clicked)
             self.dlg.tabWidget.currentChanged.connect(self.slot_tabWidget_currentChanged)
+            self.dlg.tabWidget.setCurrentIndex(0)
             # folders
-            self.dlg.mQgsFileWidget_weatherFile.setFilePath( self.project.absolutePath())
-            self.dlg.mQgsFileWidget_weatherFolder.setFilePath( self.project.absolutePath())
+            self.dlg.fileWidget_weatherFile.setFilePath( self.project.absolutePath())
+            self.dlg.fileWidget_weatherFolder.setFilePath( self.project.absolutePath())
+            self.dlg.state['nweathers'] = 0
+            # elevation fuels ignitions default names
+            layers_byName = { l.name():l for l in QgsProject.instance().mapLayers().values()}
+            if 'elevation' in layers_byName:
+                self.dlg.layerComboBox_elevation.setLayer(layers_byName['elevation'])
+            if 'fuels' in layers_byName:
+                self.dlg.layerComboBox_fuels.setLayer(layers_byName['fuels'])
+            if 'ignitions' in layers_byName:
+                self.dlg.layerComboBox_ignitionPoints.setLayer(layers_byName['ignitions'])
             #
             self.dlg.msgBar.pushMessage(aName+' Hello World!','(Keep a project with layers open when interacting)', duration=-1, level=Qgis.Info)
 
         if QgsProject.instance().mapLayers() == {}:
             self.iface.messageBar().pushCritical(aName+': No layers found', 'Open a project with layers and try again')
+            log('Open a project with layers and try again', pre='No layers found', level=3)
             return
 
         if self.project != QgsProject().instance():
             old = self.project
             self.project = QgsProject().instance()
-            self.dlg.msgBar.pushWarning(aName+' Project Changed!','\nold: %s,%s\nnew: %s,%s'%( old.absoluteFilePath(),          old.baseName(),
-                                                                                      self.project.absoluteFilePath(), self.project.baseName()))
+            log( 'Old: %s %s New: %s %s'%( old.absoluteFilePath(), old.baseName(),
+                                  self.project.absoluteFilePath(), self.project.baseName()), pre='Project Changed!', level=3, msgBar=self.dlg.msgBar)
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
@@ -271,11 +289,45 @@ class fire2amClass:
             # substitute with your code.
             pass
 
-    def gatherUiArgs(self):
-        #self.uiargs[''] = 
-        self.uiargs['nsims'] = int(self.dlg.spinBox_nsims.value())
-        self.uiargs['max_fire_periods'] = int(self.dlg.spinBox_maxfireperiods.value())
-        #    self.uiargs[''] = 
+    def processLayers(self):
+        log('processing layers',level=0)#, msgBar=self.dlg.msgBar)
+
+        '''create a numerated cell grid BASED ON FUELS'''
+        polyLayer = pixelstopolygons(self.dlg.state['layerComboBox_fuels'])
+        polyLayer = addautoincrementalfield(polyLayer)
+        addXYcentroid( polyLayer )
+        add2dIndex( polyLayer, x='center_x', y='center_y')
+        ''' add to project '''
+        polyLayer.setName('instance_grid')
+        polyLayer.loadNamedStyle(os.path.join( self.plugin_dir, 'img/instanceGrid_layerStyle.qml'))
+        QgsProject.instance().addMapLayer(polyLayer)
+        self.layer['grid'] = polyLayer
+
+        ''' create ignition cells layer '''
+        if self.dlg.state['radioButton_ignitionRandom'] or self.dlg.state['radioButton_ignitionPoints']:
+
+            if self.dlg.state['radioButton_ignitionRandom']:
+                log('ignitionRandom NotImplemented',level=0, msgBar=self.dlg.msgBar)
+            elif self.dlg.state['radioButton_ignitionPoints']:
+                ''' in which cell a ignition point belongs to '''
+                ignitions = self.dlg.state['layerComboBox_ignitionPoints']
+                for ig in ignitions.getFeatures():
+                    for p in polyLayer.getFeatures():
+                        if p.geometry().contains(ig.geometry()):
+                            polyLayer.select(p.id())
+                            #print(p.attributes(),ig.geometry())
+            ''' new layer from selected cells '''
+            ignition_cells = polyLayer.materialize(QgsFeatureRequest().setFilterFids(polyLayer.selectedFeatureIds()))
+            ''' add to project '''
+            ignition_cells.setName('ignition_cells')
+            ignition_cells.loadNamedStyle(os.path.join( self.plugin_dir, 'img/ignitionCells_layerStyle.qml'))
+            QgsProject.instance().addMapLayer(ignition_cells)
+            self.layer['ignitionPoints'] = ignition_cells
+
+        elif self.dlg.state['radioButton_ignitionProbMap']:
+            log('ignitionProbMap NotImplemented',level=0, msgBar=self.dlg.msgBar)
+
+        self.layers_byName = { l.name():l for l in QgsProject.instance().mapLayers().values()}
 
     def makeInstance(self):
         '''mkdir directory, TODO filter args, copy&paste files
@@ -284,13 +336,24 @@ class fire2amClass:
         now_str = now.strftime('%y-%m-%d_%H-%M-%S')
         self.uiargs['InFolder'] = os.path.join( self.project.absolutePath(), 'Instance'+now_str)
         os.mkdir( self.uiargs['InFolder'])
-        self.dlg.msgBar.pushInfo('Preparing Simulation','Created directory %s'%self.uiargs['InFolder'])
-        '''weather'''
-        if self.dlg.radioButton_weatherRandom.isChecked():
+        log( self.uiargs['InFolder'],pre='Created directory',level=0, msgBar=self.dlg.msgBar)
+        '''
+        elevation'''
+        elayer = self.dlg.state['layerComboBox_elevation']
+        copy( elayer.publicSource() , self.uiargs['InFolder'])
+        log( 'elevation copied', level=0, msgBar=self.dlg.msgBar)
+        '''
+        fuels'''
+        flayer = self.dlg.state['layerComboBox_fuels']
+        copy( flayer.publicSource() , self.uiargs['InFolder'])
+        log( 'fuels copied',level=0, msgBar=self.dlg.msgBar)
+        '''
+        weather'''
+        if self.dlg.state['radioButton_weatherRandom']:
             ''' generate one Weather.csv
             other columns=['Instance','datetime','WS','WD','FireScenario'])
             '''
-            nrows = self.uiargs['max_fire_periods']
+            nrows = self.dlg.state['spinBox_max_fire_periods']
             dt = [ now + timedelta(hours=i) for i in range(nrows)]
             ''' totally random '''
             WD = np.random.randint(0,359,nrows)
@@ -300,67 +363,187 @@ class fire2amClass:
             WS = [np.random.randint(1,200)]*nrows
             df = DataFrame( np.vstack((dt,WD,WS)).T, columns=['datetime','WD','WS'])
             df.to_csv( os.path.join( self.uiargs['InFolder'],'Weather.csv'), header=True, index=False)
-        elif self.dlg.radioButton_weatherConstant.isChecked():
+            log( 'speed:%s direction:%s'%(WS,WD), pre='Random Wind', level=4, msgBar=self.dlg.msgBar)
+        elif self.dlg.state['radioButton_weatherConstant']:
             ''' read dial and slider to generate Weather.csv '''
-            nrows = self.uiargs['max_fire_periods']
+            nrows = self.dlg.state['spinBox_max_fire_periods']
             dt = [ now + timedelta(hours=i) for i in range(nrows)]
-            WD = [ self.dlg.spinBox_windDirection.value() ] * nrows
-            WS = [ self.dlg.spinBox_windSpeed.value() ] * nrows
+            WD = [ self.dlg.state['spinBox_windDirection'] ] * nrows
+            WS = [ self.dlg.state['spinBox_windSpeed'] ] * nrows
             df = DataFrame( np.vstack((dt,WD,WS)).T, columns=['datetime','WD','WS'])
             df.to_csv( os.path.join( self.uiargs['InFolder'],'Weather.csv'), header=True, index=False)
-        elif self.dlg.radioButton_weatherFile.isChecked():
+            log( 'speed:%s direction:%s'%(WS,WD), pre='Constant Wind', level=4, msgBar=self.dlg.msgBar)
+        elif self.dlg.state['radioButton_weatherFile']:
             ''' copy weather file '''
-            copy( self.uiargs['weatherFile'], self.uiargs['InFolder'])
-        elif self.dlg.radioButton_weatherFolder.isChecked():
+            copy( self.dlg.state['fileWidget_weatherFile'], self.uiargs['InFolder'])
+            log( 'weather file copied',level=0, msgBar=self.dlg.msgBar)
+        elif self.dlg.state['radioButton_weatherFolder']:
             ''' copy weather folder '''
             dst = os.path.join( self.uiargs['InFolder'],'Weather')
-            for filename in glob.glob(self.uiargs['weatherFolder']):
+            for filename in glob.glob(self.dlg.state['fileWidget_weatherFolder']):
                 basename = os.path.basename(filename)
                 if basename[:7] == 'Weather' and basename[-4:] == '.csv':
                     copy( filename , dst)
-            
-    def initUiArgsKeys(self):
-        keys = ['layer_fuels', 'weatherFile', 'weatherFolder', 'layer_ignition_points', 'layer_ignition_probs']
-        for k in keys:
-            self.uiargs[k] = None
+            log( 'weather folder copied',level=0, msgBar=self.dlg.msgBar)
+        ''' ignitions
+         TODO   get rid of protected name 'instance_grid'
+                no need to update current layers? 
+                write a new file instead of assuming it exists
+        '''
+        layers_byName = { l.name():l for l in QgsProject.instance().mapLayers().values()}
+        if self.dlg.state['radioButton_ignitionRandom']:
+            ''' get number of cells in instance (grid layer max(index)) then draw random '''
+            num_cells = len(self.layer['grid'])
+            point = np.random.randint(num_cells)
+            df = DataFrame( [[1,point]] , columns=['Year','Ncell'])
+            df.to_csv( os.path.join( self.uiargs['InFolder'],'Ignitions.csv'), header=True, index=False)
+            log( '%s cell written'%point, pre='Random ignition', level=0, msgBar=self.dlg.msgBar)
+        elif self.dlg.state['radioButton_ignitionPoints']:
+            ''' ignition points are cells, read index, write csv '''
+            ic_stuff = getVectorLayerStuff( self.layer['ignitionPoints'])
+            data = { 'Year':None, 'Ncell': np.int16( ic_stuff.attr[ :, ic_stuff.names.index('index')])}
+            df = DataFrame.from_dict( data)
+            df.fillna(1, inplace=True)
+            df.to_csv( os.path.join( self.uiargs['InFolder'],'Ignitions.csv'), header=True, index=False)
+            log( 'written', pre='Ignition points', level=0, msgBar=self.dlg.msgBar)
+        elif self.dlg.state['radioButton_ignitionProbMap']:
+            raise NotImplementedError
 
     def slot_tabWidget_currentChanged(self):
-        '''
+        ''' connect signals when tab is opened
         sender = self.dlg.sender()
         senderName = sender.objectName()
         QgsMessageLog.logMessage('tab_callback\tci:%s\tname:%s'%(ci,senderName), MESSAGE_CATEGORY, level = Qgis.Info)
+        TBD track connections id
                 self.conn_id[ci] += [ self.dlg.radioButton_ignitionPoints.clicked.connect(self.slot_ignitionPoints_clicked)]
-                self.conn_id[ci] += [ self.dlg.mMapLayerComboBox_ignitionPoints.layerChanged.connect(self.slot_ignitionPoints_layerChanged)]
+                self.conn_id[ci] += [ self.dlg.layerComboBox_ignitionPoints.layerChanged.connect(self.slot_ignitionPoints_layerChanged)]
         '''
         ci = self.dlg.tabWidget.currentIndex()
         if ci == 0:
-            self.dlg.mMapLayerComboBox_fuels.layerChanged.connect( self.slot_mMapLayerComboBox_fuels_layerChanged)
-            self.dlg.mMapLayerComboBox_elevation.layerChanged.connect( self.slot_mMapLayerComboBox_elevation_layerChanged)
+            self.dlg.layerComboBox_fuels.layerChanged.connect( self.slot_layerComboBox_fuels_layerChanged)
+            self.dlg.layerComboBox_elevation.layerChanged.connect( self.slot_layerComboBox_elevation_layerChanged)
         elif ci == 1:
-            self.dlg.mQgsFileWidget_weatherFolder.fileChanged.connect( self.slot_mQgsFileWidget_weatherFolder_fileChanged)
-            self.dlg.mQgsFileWidget_weatherFile.fileChanged.connect( self.slot_mQgsFileWidget_weatherFile_fileChanged)
+            self.dlg.fileWidget_weatherFolder.fileChanged.connect( self.slot_fileWidget_weatherFolder_fileChanged)
+            self.dlg.fileWidget_weatherFile.fileChanged.connect( self.slot_fileWidget_weatherFile_fileChanged)
             self.dlg.radioButton_weatherFolder.clicked.connect( self.slot_radioButton_weatherFolder_clicked)
             self.dlg.radioButton_weatherFile.clicked.connect( self.slot_radioButton_weatherFile_clicked)
         elif ci == 2:
             self.dlg.radioButton_ignitionPoints.clicked.connect(self.slot_radioButton_ignitionPoints_clicked)
-            self.dlg.mMapLayerComboBox_ignitionPoints.layerChanged.connect(self.slot_mMapLayerComboBox_ignitionPoints_layerChanged)
+            self.dlg.layerComboBox_ignitionPoints.layerChanged.connect(self.slot_layerComboBox_ignitionPoints_layerChanged)
+            #self.dlg.radioButton_ignitionProbMap.clicked.connect(self.slot_radioButton_ignitionProbMap_clicked)
+            #self.dlg.layerComboBox_ignitionProbMap.layerChanged.connect(self.slot_layerComboBox_ignitionProbMap_layerChanged)
         elif ci == 5:
             self.dlg.toolButton_next.clicked.connect(self.slot_toolButton_next_clicked)
             self.dlg.toolButton_prev.clicked.connect(self.slot_toolButton_prev_clicked)
 
-    def slot_mMapLayerComboBox_fuels_layerChanged(self):
+    def slot_layerComboBox_fuels_layerChanged(self, layer):
         try:
             if not layer.type() == QgsMapLayerType.RasterLayer:
-                self.dlg.msgBar.pushWarning('Fuel', layer.name()+' not a Raster layer')
+                log( 'Fuel layer'+layer.name(), pre='Not Raster!' , level=2, msgBar=self.dlg.msgBar)
         except Exception as e:
-            print('Fuel Exception' ,e)
+            log(e, pre='Fuel layer exception!', level=3, msgBar=self.dlg.msgBar)
 
-    def slot_mMapLayerComboBox_elevation_layerChanged(self):
+    def slot_layerComboBox_elevation_layerChanged(self, layer):
         try:
             if not layer.type() == QgsMapLayerType.RasterLayer:
-                self.dlg.msgBar.pushWarning('Elevation', layer.name()+' not a Raster layer')
+                log( 'Elevation layer '+layer.name(), pre='Not Raster!', level=2, msgBar=self.dlg.msgBar)
         except Exception as e:
-            print('Elevation Exception' ,e)#, file=stderr
+            log(e, pre='Elevation layer exception!', level=3, msgBar=self.dlg.msgBar)
+
+    def slot_layerComboBox_ignitionPoints_layerChanged(self, layer):
+        def warn_reject(msg):
+            self.dlg.radioButton_ignitionRandom.setChecked(True)
+            log( 'layer '+layer.name(), pre=msg, level=2,msgBar=self.dlg.msgBar)
+        try:
+            if not layer.type() == QgsMapLayerType.VectorLayer:
+                warn_reject('Not vector!')
+                return
+            if not layer.wkbType() == QgsWkbTypes.Point:
+                warn_reject('Not with Points!')
+                return
+            pts = [ f.geometry() for f in layer.getFeatures() \
+                    if check( f, 'geometry') and \
+                       f.geometry().wkbType() == QgsWkbTypes.Point]
+            if len(pts) == 0:
+                warn_reject('0 points found!')
+                return
+            log( 'Read from %s layer'%layer.name(), pre='%s points'%len(pts), level=4, msgBar=self.dlg.msgBar)
+            self.dlg.radioButton_ignitionPoints.setChecked(True)
+        except Exception as e:
+            log( e, pre='Ignition Point layer exception!', level=2, msgBar=self.dlg.msgBar)
+
+    def slot_fileWidget_weatherFolder_fileChanged(self, directory):
+        self.timer_weatherFile.stop()
+        self.timer_weatherFolder.stop()
+        ''' count sequential Weather files '''
+        i=1
+        while os.path.isfile( os.path.join( directory, 'Weather'+str(i)+'.csv')):
+            i+=1
+        i-=1
+        if i==0: 
+            ''' restore '''
+            log( 'Weather files must be a consecutive numbered sequence [1..N]', pre='No Weather[1..N].csv files', level=2, msgBar=self.dlg.msgBar)
+            self.dlg.fileWidget_weatherFolder.blockSignals(True)
+            self.dlg.fileWidget_weatherFolder.setFilePath( self.project.absolutePath())
+            self.dlg.fileWidget_weatherFolder.blockSignals(False)
+            self.dlg.radioButton_weatherRandom.setChecked(True)
+            self.dlg.state['nweathers'] = 0
+            return
+        log(  'Found in %s'%directory, pre='Weathers[1..%s].csv'%i, level=4, msgBar=self.dlg.msgBar)
+        self.dlg.radioButton_weatherFolder.setChecked(True)
+        self.dlg.state['radioButton_weatherFolder'] = True
+        self.dlg.state['fileWidget_weatherFolder'] = filepath
+        self.dlg.state['nweathers'] = i
+
+    def slot_fileWidget_weatherFile_fileChanged(self, filepath):
+        self.timer_weatherFile.stop()
+        self.timer_weatherFolder.stop()
+        ''' can restore after exception '''
+        def restore():
+            self.dlg.fileWidget_weatherFile.blockSignals(True)
+            self.dlg.fileWidget_weatherFile.setFilePath( self.project.absolutePath())
+            self.dlg.fileWidget_weatherFile.blockSignals(False)
+            self.dlg.radioButton_weatherRandom.setChecked(True)
+        try:
+            df = read_csv( filepath)
+            if 'WS' not in df.columns or 'WD' not in df.columns or len(df)==0:
+                log(  os.path.basename(filepath)+' file does not contain them', pre='Missing WD or WS columns!', level=2, msgBar=self.dlg.msgBar)
+                restore()
+                return
+            log( 'has WD & WS columns, %s hours (rows)'%len(df), pre=os.path.basename(filepath), level=4, msgBar=self.dlg.msgBar)
+            self.dlg.radioButton_weatherFile.setChecked(True)
+            self.dlg.state['radioButton_weatherFile'] = True
+            self.dlg.state['fileWidget_weatherFile'] = filepath
+        except Exception as e:
+            log( e, pre='Single .csv file %s exception'%filepath, level=2, msgBar=self.dlg.msgBar)
+            restore()
+
+    def slot_radioButton_weatherFile_clicked(self):
+        filepath = self.dlg.fileWidget_weatherFile.filePath()
+        if self.dlg.state['fileWidget_weatherFile'] == filepath and filepath[:-3]=='csv' or filepath == None:
+            return
+        self.timer_weatherFile.timeout.connect( lambda : self.slot_fileWidget_weatherFile_fileChanged(self.dlg.fileWidget_weatherFile.filePath()))
+        #self.timer_weatherFile.timeout.connect( lambda : self.slot_fileWidget_weatherFile_fileChanged(filepath))
+        self.timer_weatherFile.start(3000)
+
+    def slot_radioButton_weatherFolder_clicked(self):
+        filepath = self.dlg.fileWidget_weatherFolder.filePath()
+        if self.dlg.state['fileWidget_weatherFile'] == filepath and self.dlg.state['nweathers'] != 0:
+            return
+        self.timer_weatherFolder.timeout.connect( lambda : self.slot_fileWidget_weatherFolder_fileChanged(filepath))
+        self.timer_weatherFolder.start(3000)
+
+    def slot_radioButton_ignitionPoints_clicked(self):
+        try:
+            layer = self.dlg.layerComboBox_ignitionPoints.currentLayer()
+            if self.uiargs['layer_ignition_points'] == layer:
+                return
+            if layer.type() != QgsMapLayerType.VectorLayer:
+                QTest.qWait(2000)
+            layer = self.dlg.layerComboBox_ignitionPoints.currentLayer()
+            self.slot_layerComboBox_ignitionPoints_layerChanged(layer)
+        except Exception as e:
+            print('Exception' ,e)
 
     def slot_toolButton_next_clicked(self):
         print('next clicked')
@@ -368,116 +551,18 @@ class fire2amClass:
     def slot_toolButton_prev_clicked(self):
         print('prev clicked')
 
-    def slot_mQgsFileWidget_weatherFolder_fileChanged(self, directory):
-        def restore():
-            self.dlg.mQgsFileWidget_weatherFolder.blockSignals(True)
-            self.dlg.mQgsFileWidget_weatherFolder.setFilePath( self.project.absolutePath())
-            self.dlg.mQgsFileWidget_weatherFolder.blockSignals(False)
-            self.dlg.radioButton_weatherRandom.setChecked(True)
-        i=1
-        while os.path.isfile( os.path.join( directory, 'Weather'+str(i)+'.csv')):
-            i+=1
-        i-=1
-        if i==0:
-            self.dlg.msgBar.pushWarning( u'No Weather[1..N].csv files', 'Weather files must be a consecutive numbered sequence [1..N]')
-            restore()
-            return
-        self.dlg.msgBar.pushSuccess( u'Weathers[1..%s].csv'%i, 'found')
-        self.dlg.radioButton_weatherFolder.setChecked(True)
-        self.uiargs['weatherFolder'] = directory
-
-    def slot_mQgsFileWidget_weatherFile_fileChanged(self, filepath):
-        def restore():
-            self.dlg.mQgsFileWidget_weatherFile.blockSignals(True)
-            self.dlg.mQgsFileWidget_weatherFile.setFilePath( self.project.absolutePath())
-            self.dlg.mQgsFileWidget_weatherFile.blockSignals(False)
-            self.dlg.radioButton_weatherRandom.setChecked(True)
-        try:
-            from pandas import read_csv
-            df = read_csv( filepath)
-            columns = df.columns
-            if 'WS' not in df.columns or 'WD' not in df.columns:
-                self.dlg.msgBar.pushWarning( 'Missing WD or WS columns', os.path.basename(filepath)+' does not contain')
-                restore()
-                return
-            self.dlg.msgBar.pushSuccess( os.path.basename(filepath), 'has WD & WS columns, %s hours'%len(df))
-            self.dlg.radioButton_weatherFile.setChecked(True)
-            self.uiargs['weatherFile'] = filepath
-        except Exception as e:
-            self.dlg.msgBar.pushWarning( 'Single .csv file exception' ,str(e))
-            restore()
-            print('Exception' ,e)
-
-    def slot_mMapLayerComboBox_ignitionPoints_layerChanged(self, layer):
-        def warn_reject(msg : str):
-            self.dlg.msgBar.pushWarning( layer.name()+' layer', msg)
-            self.dlg.radioButton_ignitionRandom.setChecked(True)
-            print('%s layer %s'%(layer.name(),msg))
-        try:
-            if not layer.type() == QgsMapLayerType.VectorLayer:
-                warn_reject('not a Vector Layer')
-                return
-            if not layer.wkbType() == QgsWkbTypes.Point:
-                warn_reject('not a Point Layer')
-                return
-            if not check(layer, 'getFeatures'):
-                warn_reject('doesnt have features')
-                return
-            if not any( f.geometry() for f in layer.getFeatures() if check( f, 'geometry')):
-                warn_reject('any features without geometry')
-                return
-            pts = [ f.geometry() for f in layer.getFeatures() \
-                    if check( f, 'geometry') and \
-                       f.geometry().wkbType() == QgsWkbTypes.Point]
-            if len(pts) == 0:
-                warn_reject('0 points found')
-                return
-            print(pts)
-            self.dlg.msgBar.pushSuccess( '%s points'%len(pts),'read from %s layer'%layer.name())
-            self.dlg.radioButton_ignitionPoints.setChecked(True)
-            self.uiargs['ignitionPoints'] = layer
-        except Exception as e:
-            print('Exception' ,e)#, file=stderr
-        '''
-        pyqtRemoveInputHook()
-        pdb.set_trace()
-        #import code; code.interact(local=vars())
-        # TODO match to extent, convert to file
-        '''
-
-    def slot_radioButton_weatherFile_clicked(self):
-        filepath = self.dlg.mQgsFileWidget_weatherFile.filePath()
-        if self.uiargs['weatherFile'] == filepath and self.uiargs['weatherFile'] is not None:
-            return
-        QTest.qWait(2000)
-        self.slot_mQgsFileWidget_weatherFile_fileChanged(filepath)
-
-    def slot_radioButton_weatherFolder_clicked(self):
-        filepath = self.dlg.mQgsFileWidget_weatherFolder.filePath()
-        if self.uiargs['weatherFolder'] == filepath and self.uiargs['weatherFolder'] is not None:
-            return
-        QTest.qWait(2000)
-        self.slot_mQgsFileWidget_weatherFolder_fileChanged(filepath)
-
-    def slot_radioButton_ignitionPoints_clicked(self):
-        try:
-            layer = self.dlg.mMapLayerComboBox_ignitionPoints.currentLayer()
-            if self.uiargs['layer_ignition_points'] == layer:
-                return
-            if layer.type() != QgsMapLayerType.VectorLayer:
-                QTest.qWait(2000)
-            layer = self.dlg.mMapLayerComboBox_ignitionPoints.currentLayer()
-            self.slot_mMapLayerComboBox_ignitionPoints_layerChanged(layer)
-        except Exception as e:
-            print('Exception' ,e)
-
     def slot_button_box_clicked(self, button):
         if button.text() == 'Reset':
             print('Reset')
+            #pyqtRemoveInputHook()
+            #pdb.set_trace()
+            #import code
+            #!code.interact(local=dict(globals(), **locals()))
         elif button.text() == 'Apply':
             print('Apply')
             self.dummyApply()
-            self.gatherUiArgs()
+            self.dlg.updateState()
+            self.processLayers()
             self.makeInstance()
         elif button.text() == 'Restore Defaults':
             print('Restore Defaults')

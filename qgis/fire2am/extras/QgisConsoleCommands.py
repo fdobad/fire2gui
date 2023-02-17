@@ -118,8 +118,8 @@ def add2dIndex( layer, x='x', y='y'):
     idposx = fields_name.index('pos_x')
     idposy = fields_name.index('pos_y')
     for i,feature in enumerate(layer.getFeatures()):
-        attrx = { idposx : pos_x[i] }
-        attry = { idposy : pos_y[i] }
+        attrx = { idposx : int(pos_x[i]) }
+        attry = { idposy : int(pos_y[i]) }
         layer.dataProvider().changeAttributeValues({feature.id() : attrx })
         layer.dataProvider().changeAttributeValues({feature.id() : attry })
         
@@ -129,9 +129,9 @@ def addXYcentroid( layer ):
     caps = layer.dataProvider().capabilities()
     if caps & QgsVectorDataProvider.AddAttributes:
         if 'center_x' not in fields_name:
-            layer.dataProvider().addAttributes([QgsField('center_x', QVariant.Int)])
+            layer.dataProvider().addAttributes([QgsField('center_x', QVariant.Double)])
         if 'center_y' not in fields_name:
-            layer.dataProvider().addAttributes([QgsField('center_y', QVariant.Int)])
+            layer.dataProvider().addAttributes([QgsField('center_y', QVariant.Double)])
         layer.updateFields()
         fields_name = [f.name() for f in layer.fields()]
         fareaidx = fields_name.index('center_x')
@@ -160,9 +160,22 @@ for ig in ignitions.getFeatures():
             polyLayer.select(p.id())
             #print(p.attributes(),ig.geometry())
 
-polyLayer.setName('ignitions_grid')
-QgsProject.instance().addMapLayer(polyLayer)
+#layer.materialize
+ignition_cells = polyLayer.materialize(QgsFeatureRequest().setFilterFids(polyLayer.selectedFeatureIds()))
 
-QgsVectorFileWriter.writeAsVectorFormat(polyLayer, "ignitions_grid.gpkg")
+ignition_cells.setName('ignition_cells')
+polyLayer.setName('instance_grid')
+
+# TODO
+import os.path
+plugin_dir = '/home/fdo/dev/fire2am/img'
+ignition_cells.loadNamedStyle(os.path.join( plugin_dir, 'ignitionCells_layerStyle.qml'))
+polyLayer.loadNamedStyle(os.path.join( plugin_dir, 'instanceGrid_layerStyle.qml'))
+
+QgsProject.instance().addMapLayer(polyLayer)
+QgsProject.instance().addMapLayer(ignition_cells)
+
+#QgsVectorFileWriter.writeAsVectorFormat(ignition_cells, "ignition_cells.gpkg")
+#QgsVectorFileWriter.writeAsVectorFormat(polyLayer, "instance_grid.gpkg")
 
 print('=== Bye World!',datetime.now().strftime('%H:%M:%S'),'===')

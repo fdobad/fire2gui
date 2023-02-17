@@ -9,7 +9,7 @@ https://gist.githubusercontent.com/ThomasG77/f711853e5fb81c746d2a1af0b2a9ecf5/ra
 import sys
 from qgis.core import (QgsApplication, QgsCoordinateReferenceSystem, QgsProject, QgsRasterLayer, QgsRectangle)
 from qgis.gui import QgsLayerTreeMapCanvasBridge, QgsMapCanvas
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, QTimer
 
 def main():
     app = QgsApplication([], True)
