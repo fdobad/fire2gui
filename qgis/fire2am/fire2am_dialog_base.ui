@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab_landscape">
       <attribute name="title">
@@ -99,7 +99,7 @@ Rate of Spread</string>
         </widget>
        </item>
        <item row="5" column="1">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox_cvROS"/>
+        <widget class="QDoubleSpinBox" name="doubleSpinBox_ROS_CV"/>
        </item>
        <item row="3" column="1">
         <widget class="QgsFileWidget" name="fileWidget_weatherFile"/>

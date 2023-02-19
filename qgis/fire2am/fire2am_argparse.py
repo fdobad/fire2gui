@@ -12,14 +12,14 @@ from argparse import Namespace
 import sys, pickle
 import pyperclip
 import os.path
-from .fire2am_utils import safe_cast_ok, aName, get_params
+from .fire2am_utils import safe_cast_ok, aName, get_params, log
 from .ParseInputs import Parser
 
 class fire2amClassDialogArgparse(QtWidgets.QDialog):
     def __init__(self, parent=None):
         """Constructor."""
-        super(fire2amClassDialogArgparse, self).__init__(parent)
         self.args, self.parser, self.groups = get_params(Parser)
+        super(fire2amClassDialogArgparse, self).__init__(parent)
         #print(self.args, self.groups)
         # mild consistency check
         if any( g in self.args.keys() for g in self.groups):
@@ -34,7 +34,9 @@ class fire2amClassDialogArgparse(QtWidgets.QDialog):
             self.setLayout(layout)
             return
         self.setupUi()
+        self.gen_args = None
         self.gen_cmd()
+        log('argparse init completed',self.gen_args,__name__)
 
     def setupUi(self):
         self.setWindowFlags( Qt.WindowCloseButtonHint | Qt.WindowMaximizeButtonHint)
@@ -236,6 +238,7 @@ class fire2amClassDialogArgparse(QtWidgets.QDialog):
 
     def gen_cmd(self):
         #print('\tgen_cmd',end='\t')
+        self.gen_args = {}
         cmd=self.header_textEdit.toPlainText()
         iterator = QtWidgets.QTreeWidgetItemIterator(self.tree)
         item: QtWidgets.QTreeWidgetItem = iterator.value()
@@ -245,8 +248,10 @@ class fire2amClassDialogArgparse(QtWidgets.QDialog):
                 pass
             elif self.parser[key]['type'] is None:
                 cmd += self.parser[key]['option_strings'][0] + ' '
+                self.gen_args[key] = True
             else:
                 cmd += self.parser[key]['option_strings'][0] + ' ' + str(self.args[key]) + ' '
+                self.gen_args[key] = self.args[key]
             iterator += 1
             item = iterator.value()
         self.text.setPlainText(cmd)

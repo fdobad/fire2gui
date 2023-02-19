@@ -29,10 +29,9 @@ from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import QEvent, Qt
 from qgis.PyQt.QtGui import QKeySequence
 
+import os,csv, io
 from .fire2am_utils import PandasModel
 
-from multiprocessing import cpu_count
-import os,csv, io
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -51,26 +50,26 @@ class fire2amClassDialog(QtWidgets.QDialog, FORM_CLASS):
         '''Constructor.'''
         super(fire2amClassDialog, self).__init__(parent)
         self.setupUi(self)
-        self.state = {}
-        self.updateState()
         '''Customize.'''
         self.setWindowFlags( Qt.WindowCloseButtonHint | Qt.WindowMaximizeButtonHint)
         self.msgBar = QgsMessageBar()
         ''' TODO qlabel vertical expand 
-        self.msgBar.setSizePolicy( QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding) #Fixed Maximum
-            for c in self.msgBar.children():
-                if type(c) == QtWidgets.QLabel:
-                    c.setSizePolicy( QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding )
-                    #c.setSizePolicy( c.sizePolicy().horizontalPolicy(), c.sizePolicy().horizontalPolicy() )
-                    c.setMaximumHeight( c.maximumWidth() )
+            self.msgBar.setSizePolicy( QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding) #Fixed Maximum
+                for c in self.msgBar.children():
+                    if type(c) == QtWidgets.QLabel:
+                        c.setSizePolicy( QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding )
+                        #c.setSizePolicy( c.sizePolicy().horizontalPolicy(), c.sizePolicy().horizontalPolicy() )
+                        c.setMaximumHeight( c.maximumWidth() )
         '''
         self.layout().addWidget(self.msgBar) # at the end: .insertRow . see qformlayout
-        self.spinBox_nsims.setValue(cpu_count())
         self.PandasModel = PandasModel
         self.tableView_1.installEventFilter(self)
         self.tableView_2.installEventFilter(self)
         #self.tableView_1.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         #self.tableView_2.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.state = {}
+        self.updateState()
+        self.args = {}
 
     def updateState(self):
         ''' for 5 types of widgets put their state, value, layer or filepath into a self.state dict 

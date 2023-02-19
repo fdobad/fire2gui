@@ -108,7 +108,6 @@ def addXYcentroid( layer ):
             layer.dataProvider().changeAttributeValues({feature.id() : attrx })
             layer.dataProvider().changeAttributeValues({feature.id() : attry })
 
-from collections import namedtuple
 def getVectorLayerStuff( layer) -> namedtuple:
     '''TODO add field_types = [f.typeName() for f in layer.fields()]
     '''
@@ -123,6 +122,16 @@ def getVectorLayerStuff( layer) -> namedtuple:
                         attr = np.array(attributes),
                         geom = np.array(geometry),
                         len = len(geometry) )
+
+def convertRasterToNumpyArray(lyr): #Input: QgsRasterLayer
+    values=[]
+    provider= lyr.dataProvider()
+    block = provider.block(1,lyr.extent(),lyr.width(),lyr.height())
+    for i in range(lyr.width()):
+        for j in range(lyr.height()):
+            values.append(block.value(i,j))
+    return np.array(values)
+
 
 # Qt
 ''' 
@@ -189,7 +198,9 @@ class PandasModel(QAbstractTableModel):
 
 ''' Argparse '''
 def get_params(Parser):
-    ''' get an argparse object that has groups '''
+    ''' get an argparse object that has groups 
+        args, parser, groups = get_params(Parser)
+    '''
     parser, groups = get_grouped_parser(Parser())
     args = { dest:parser[dest]['default'] for dest in parser.keys() }
     return args, parser, groups
