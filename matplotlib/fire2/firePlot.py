@@ -131,7 +131,7 @@ def qmAnimation():
     anime = FuncAnimation(fig, animate, frames = range(n), blit = False)
     plt.show()
     plt.rcParams['animation.convert_path'] = r'/usr/bin/convert'
-    anime.save('fireEvolution.gif', writer='imagemagick', fps=3)
+    #anime.save('fireEvolution.gif', writer='imagemagick', fps=3)
 #qmAnimation()
 
 def qmBlitAnimation():
@@ -163,7 +163,7 @@ def qmBlitAnimation():
     anime = FuncAnimation(fig, animate, frames = range(n), blit = True)
     plt.show()
     plt.rcParams['animation.convert_path'] = r'/usr/bin/convert'
-    anime.save('fireEvolution.gif', writer='imagemagick', fps=3)
+    #anime.save('fireEvolution.gif', writer='imagemagick', fps=3)
 #qmBlitAnimation()
 
 def main():
