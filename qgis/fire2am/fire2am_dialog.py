@@ -23,34 +23,26 @@
  *                                                                         *
  ***************************************************************************/
 '''
-from qgis.gui import QgsMessageBar
+from qgis.gui import QgsMessageBar, QgsMapLayerComboBox, QgsFileWidget
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import QEvent, Qt
 from qgis.PyQt.QtGui import QKeySequence
 
-from .fire2am_utils import PandasModel, MatplotlibModel
-
-from multiprocessing import cpu_count
 import os,csv, io
+from .fire2am_utils import PandasModel
+
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'fire2am_dialog_base.ui'))
-'''if Interactive.'''
-'''
-os.getcwd(), 'fire2am_dialog_base.ui'))
-from qgis.core import QgsApplication
-app = QgsApplication([], True)
-dlg = fire2amClassDialog()
-'''
-'''if Debug'''
-'''
-import pdb
-from qgis.PyQt.QtCore import pyqtRemoveInputHook
-    pyqtRemoveInputHook()
-    pdb.set_trace()
-    #(Pdb) !import code; code.interact(local=vars())
+
+'''if Interactive (maybe comment PandasModel also)
+    os.getcwd(), 'fire2am_dialog_base.ui'))
+    fr om qgis.core import QgsApplication
+    app = QgsApplication([], True)
+    dlg = fire2amClassDialog()
+    
 '''
 
 class fire2amClassDialog(QtWidgets.QDialog, FORM_CLASS):
@@ -59,17 +51,46 @@ class fire2amClassDialog(QtWidgets.QDialog, FORM_CLASS):
         super(fire2amClassDialog, self).__init__(parent)
         self.setupUi(self)
         '''Customize.'''
-
         self.setWindowFlags( Qt.WindowCloseButtonHint | Qt.WindowMaximizeButtonHint)
         self.msgBar = QgsMessageBar()
-        self.msgBar.setSizePolicy( QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Fixed )
+        ''' TODO qlabel vertical expand 
+            self.msgBar.setSizePolicy( QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding) #Fixed Maximum
+                for c in self.msgBar.children():
+                    if type(c) == QtWidgets.QLabel:
+                        c.setSizePolicy( QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding )
+                        #c.setSizePolicy( c.sizePolicy().horizontalPolicy(), c.sizePolicy().horizontalPolicy() )
+                        c.setMaximumHeight( c.maximumWidth() )
+        '''
         self.layout().addWidget(self.msgBar) # at the end: .insertRow . see qformlayout
-        self.spinBox_nsims.setValue(cpu_count())
         self.PandasModel = PandasModel
         self.tableView_1.installEventFilter(self)
         self.tableView_2.installEventFilter(self)
         #self.tableView_1.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         #self.tableView_2.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.state = {}
+        self.updateState()
+        self.args = {}
+
+    def updateState(self):
+        ''' for 5 types of widgets put their state, value, layer or filepath into a self.state dict 
+            objectNames are defined on QtDesigner
+        '''
+        # radio button
+        self.state.update( { o.objectName(): o.isChecked() 
+            for o in self.findChildren( QtWidgets.QRadioButton, 
+                                        options= Qt.FindChildrenRecursively)})
+        # layer combobox
+        self.state.update( { o.objectName(): o.currentLayer() 
+            for o in self.findChildren( QgsMapLayerComboBox, 
+                                        options= Qt.FindChildrenRecursively)})
+        # file chooser
+        self.state.update( { o.objectName(): o.filePath() 
+            for o in self.findChildren( QgsFileWidget, 
+                                        options= Qt.FindChildrenRecursively)})
+        # Double|SpinBox
+        self.state.update( { o.objectName(): o.value() 
+            for o in self.findChildren( (QtWidgets.QDoubleSpinBox, QtWidgets.QSpinBox), 
+                                        options= Qt.FindChildrenRecursively)})
 
     def eventFilter(self, source, event):
         if isinstance(source, QtWidgets.QTableView):
@@ -101,7 +122,7 @@ class fire2amClassDialog(QtWidgets.QDialog, FORM_CLASS):
             QtWidgets.qApp.clipboard().setText(stream.getvalue())
         return
 
-    '''TBD
+    ''' TBD if user pastes tabular data into table
     def pasteSelection(self):
         selection = self.selectedIndexes()
         if selection:

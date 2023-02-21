@@ -1,4 +1,5 @@
 #!/bin/env python3
+#REPLENV: /home/fdo/pyenv/qgis
 '''
 Generating fuels data
 
