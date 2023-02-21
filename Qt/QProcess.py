@@ -33,12 +33,18 @@ class MainWindow(QMainWindow):
         self.text.appendPlainText(s)
 
     def kill_process(self):
-        if self.p and self.p.state()!=0:
+        if self.p:
+            self.message(f"Attempting to kill proc with state: {self.name_state(self.p.state())}")
             self.p.kill()
+            return
+        self.message("Nothing to kill")
 
     def terminate_process(self):
-        if self.p and self.p.state()!=0:
+        if self.p:
+            self.message(f"Attempting to terminate proc with state: {self.name_state(self.p.state())}")
             self.p.terminate()
+            return
+        self.message("Nothing to terminate")
 
     def start_process(self):
         if self.p is None:  # No process running.
@@ -62,18 +68,17 @@ class MainWindow(QMainWindow):
         data = self.p.readAllStandardOutput()
         stdout = bytes(data).decode("utf8")
         self.message('o '+stdout)
-        #data = self.p.readLine()
-        #msg = 'sender %s %s' % ( self.sender(),dir(self.sender()))
-        #self.message(msg)
 
-    def handle_state(self, state):
+    def name_state(self, state):
         states = {
             QProcess.ProcessState.NotRunning: 'Not running',
             QProcess.ProcessState.Starting: 'Starting',
             QProcess.ProcessState.Running: 'Running',
         }
-        state_name = states[state]
-        self.message(f"State changed: {state_name}")
+        return states[state]
+
+    def handle_state(self, state):
+        self.message(f"State changed: {self.name_state(state)}")
 
     def process_finished(self):
         self.message("Process finished.")
