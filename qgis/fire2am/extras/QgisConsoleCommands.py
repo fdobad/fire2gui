@@ -53,6 +53,56 @@ def addautoincrementalfield(layer):
             'START' : 0 })
     return tmp['OUTPUT']
 
+def routascii(layer, filename='TEMPORARY_OUTPUT'):
+    '''returns filename as path string
+    processing.algorithmHelp('grass7:r.out.ascii')
+    '''
+    tmp = processing.run('grass7:r.out.ascii',
+           { '-i' : False,
+           '-m' : False,
+           '-s' : False,
+           'GRASS_REGION_CELLSIZE_PARAMETER' : 0,
+           'GRASS_REGION_PARAMETER' : None,
+           'input' : layer, 
+           'null_value' : '*', 
+           'output' : filename,
+           'precision' : None,
+           'width' : None })
+    return tmp['OUTPUT']
+
+def writeRaster(layer,  out_file = '/tmp/reprojected_raster.asc', 
+                        dest_crs_def = "EPSG:24879"):
+    ''' 
+    tr = QgsCoordinateTransform(QgsCoordinateReferenceSystem("EPSG:4326"),
+                                QgsCoordinateReferenceSystem("EPSG:24879"), 
+                                QgsProject.instance())
+                                
+    assert QgsRasterFileWriter.driverForExtension('asc') == 'AAIGrid'
+    No es texto
+    #provider.block(1, provider.extent(), source.width(), source.height()).data(),
+    '''
+    orig_crs = layer.crs()
+    dest_crs = QgsCoordinateReferenceSystem(dest_crs_def)
+    tr = QgsCoordinateTransform(orig_crs, dest_crs, QgsProject.instance())
+    file_writer = QgsRasterFileWriter(out_file)
+    # .setOutputFormat('asc')
+    pipe = QgsRasterPipe()
+    provider = layer.dataProvider()
+    projector = QgsRasterProjector()
+    projector.setCrs(orig_crs, dest_crs)    
+    if not pipe.set(projector):
+        print('error pipe setting projector')
+    if not pipe.set(provider.clone()):
+        print('error pipe setting provider')
+    #renderer = layer.renderer()
+    #pipe.set(renderer.clone())
+    if not file_writer.writeRaster(pipe,
+                                 provider.xSize(),
+                                 provider.ySize(),
+                                 tr.transform(provider.extent()),
+                                 dest_crs):
+        print('error file writing asc')
+    
 def add2dIndex( layer, x='x', y='y'):
     ''' add integer 2d integer index relative position pos_x pos_y
     '''
@@ -106,7 +156,7 @@ def addXYcentroid( layer ):
             layer.dataProvider().changeAttributeValues({feature.id() : attrx })
             layer.dataProvider().changeAttributeValues({feature.id() : attry })
 
-def getVectorLayerStuff( layer) -> namedtuple:
+def getVectorLayerStuff0( layer) -> namedtuple:
     '''TODO add field_types = [f.typeName() for f in layer.fields()]
     '''
     LayerStuff = namedtuple('layerStuff', 'names attr geom len')
@@ -122,6 +172,16 @@ def getVectorLayerStuff( layer) -> namedtuple:
                         len = len(geometry) )
 
 def convertRasterToNumpyArray(layer): #Input: QgsRasterLayer
+    '''
+    #provider.block(1, provider.extent(), source.width(), source.height()).data(),
+    layer = iface.mapCanvas().currentLayer()
+    provider = layer.dataProvider()
+    a = provider.block(1, layer.extent(), layer.width(), layer.height()).data()
+    b = np.asarray( a) 
+    b.shape -> 9400
+    a.width*a.height = 1175
+    9400/1175 = 8
+    '''
     values=[]
     provider= layer.dataProvider()
     block = provider.block(1,layer.extent(),layer.width(),layer.height())
@@ -129,6 +189,9 @@ def convertRasterToNumpyArray(layer): #Input: QgsRasterLayer
         for j in range(layer.height()):
             values.append(block.value(i,j))
     return np.array(values)
+    
+
+
 
 class myarray(np.ndarray):
     def __new__(cls, *args, **kwargs):
@@ -154,6 +217,8 @@ layers_byName = { l.name():l for l in QgsProject.instance().mapLayers().values()
 layers_byName
 layer = iface.mapCanvas().currentLayer()
 layer
+
+layer.setCrs( QgsCoordinateReferenceSystem(4326))
 
 print('layer type', layer.type())
 if QgsMapLayerType.VectorLayer == layer.type():

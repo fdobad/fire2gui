@@ -1,14 +1,9 @@
-PyQt5
-matplotlib
+qtconsole
+pyperclip
 pandas
 numpy
-pyperclip
 seaborn
+imread
 tqdm
 networkx
-rasterio
-imread-0.7.4-cp39-cp39-win_amd64.whl; sys.platform == "win32"
-imread; sys.platform != "win32"
-scipy
-deap
-qtconsole
+Pillow

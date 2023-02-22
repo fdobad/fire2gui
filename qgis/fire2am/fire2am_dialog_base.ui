@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab_landscape">
       <attribute name="title">
@@ -331,6 +331,51 @@ Rate of Spread</string>
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="tab_2">
+      <attribute name="title">
+       <string>Run</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="1" column="3">
+        <widget class="QPushButton" name="pushButton_terminate">
+         <property name="text">
+          <string>Terminate</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QPushButton" name="pushButton_processLayers">
+         <property name="text">
+          <string>Process Layers</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QPushButton" name="pushButton_run">
+         <property name="text">
+          <string>Run</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QPushButton" name="pushButton_kill">
+         <property name="text">
+          <string>Kill</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="4">
+        <widget class="QPushButton" name="pushButton_dev">
+         <property name="text">
+          <string>dev</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="5">
+        <widget class="QPlainTextEdit" name="plainTextEdit"/>
+       </item>
+      </layout>
+     </widget>
      <widget class="QWidget" name="tab_results">
       <attribute name="title">
        <string>Tables</string>
@@ -564,22 +609,6 @@ Rate of Spread</string>
     <hint type="destinationlabel">
      <x>441</x>
      <y>189</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>toolButton_prev</sender>
-   <signal>clicked()</signal>
-   <receiver>graphicsView</receiver>
-   <slot>update()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>31</x>
-     <y>389</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>348</x>
-     <y>210</y>
     </hint>
    </hints>
   </connection>

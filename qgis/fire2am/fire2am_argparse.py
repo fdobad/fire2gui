@@ -4,23 +4,22 @@
 standalone run:
     python3 -m fire2am.fire2am_argparse
 '''
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
-from PyQt5 import QtGui
-from PyQt5.QtCore import Qt
+from qgis.gui import QgsFileWidget
+from qgis.PyQt import QtWidgets, QtCore, QtGui
+from qgis.PyQt.QtCore import Qt
 from argparse import Namespace
 import sys, pickle
 import pyperclip
 import os.path
 from .fire2am_utils import safe_cast_ok, aName, get_params, log
-from .ParseInputs import Parser
+from .ParseInputs2 import Parser2
 
 class fire2amClassDialogArgparse(QtWidgets.QDialog):
     def __init__(self, parent=None):
         """Constructor."""
-        self.args, self.parser, self.groups = get_params(Parser)
+        self.plugin_dir = os.path.dirname(__file__)
+        self.args, self.parser, self.groups = get_params(Parser2)
         super(fire2amClassDialogArgparse, self).__init__(parent)
-        #print(self.args, self.groups)
         # mild consistency check
         if any( g in self.args.keys() for g in self.groups):
             offenders = [ g for g in self.groups if g in self.args.keys() ]
@@ -34,6 +33,9 @@ class fire2amClassDialogArgparse(QtWidgets.QDialog):
             self.setLayout(layout)
             return
         self.setupUi()
+
+        self.header = None
+        self.arg_str = None
         self.gen_args = None
         self.gen_cmd()
         log('argparse init completed',self.gen_args,__name__)
@@ -63,16 +65,28 @@ class fire2amClassDialogArgparse(QtWidgets.QDialog):
         self.clipboard_checkBox = QtWidgets.QCheckBox('Put generated command on system clipboard. ')
         self.clipboard_checkBox.setVisible(False)
         hlayout.addWidget( self.clipboard_checkBox)
-        # label
-        self.header_label = QtWidgets.QLabel(' Header:')
-        self.header_label.setAlignment( Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter )
-        self.header_label.setVisible(False)
-        hlayout.addWidget( self.header_label)
-        # header text
-        self.header_textEdit = QtWidgets.QTextEdit('python3 main.py ')
-        self.header_textEdit.setMaximumHeight(1.1*fm.height())
-        self.header_textEdit.setVisible(False)
-        hlayout.addWidget( self.header_textEdit)
+        # label_header
+        self.label_header = QtWidgets.QLabel(' Header:')
+        self.label_header.setAlignment( Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter )
+        self.label_header.setVisible(False)
+        hlayout.addWidget( self.label_header)
+        # textEdit_header 
+        self.textEdit_header = QtWidgets.QTextEdit('python3 main.py ')
+        self.textEdit_header.setMaximumHeight(1.1*fm.height())
+        self.textEdit_header.setVisible(False)
+        hlayout.addWidget( self.textEdit_header)
+        # label_directory
+        self.label_directory = QtWidgets.QLabel('Cell2Fire directory:')
+        self.label_directory.setAlignment( Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter )
+        self.label_directory.setVisible(False)
+        hlayout.addWidget( self.label_directory)
+        # fileWidget_directory 
+        self.fileWidget_directory = QgsFileWidget(storageMode = QgsFileWidget.StorageMode.GetDirectory)
+        #self.fileWidget_directory.setFilePath(os.path.join( self.plugin_dir, 'C2FSB'))
+        self.fileWidget_directory.setFilePath('/home/fdo/source/C2FSB')
+        self.fileWidget_directory.setVisible(False)
+        hlayout.addWidget( self.fileWidget_directory)
+        # add hlayout
         vlayout.addLayout( hlayout)
         # buttons
         hlayout = QtWidgets.QHBoxLayout()
@@ -95,14 +109,18 @@ class fire2amClassDialogArgparse(QtWidgets.QDialog):
             self.button_toggle.setIcon( self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_ArrowUp))
             self.text.setVisible(False)
             self.clipboard_checkBox.setVisible(False)
-            self.header_label.setVisible(False)
-            self.header_textEdit.setVisible(False)
+            self.label_header.setVisible(False)
+            self.textEdit_header.setVisible(False)
+            self.label_directory.setVisible(False)
+            self.fileWidget_directory.setVisible(False)
         else:
             self.button_toggle.setIcon( self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_ArrowDown))
             self.text.setVisible(True)
             self.clipboard_checkBox.setVisible(True)
-            self.header_label.setVisible(True)
-            self.header_textEdit.setVisible(True)
+            self.label_header.setVisible(True)
+            self.textEdit_header.setVisible(True)
+            self.label_directory.setVisible(True)
+            self.fileWidget_directory.setVisible(True)
 
     def init_Tree(self):
         tree = QtWidgets.QTreeWidget()
@@ -175,9 +193,7 @@ class fire2amClassDialogArgparse(QtWidgets.QDialog):
             item.setText( 2, str(self.parser[key]['default']))
         #print('antes',antes,'despues',self.args[key],sep='\t')
         #print('end itemChanged',key,value,column)
-        cmd = self.gen_cmd()
-        if self.clipboard_checkBox.isChecked():
-            pyperclip.copy(cmd)
+        self.gen_cmd()
     
     def slot_itemClicked( self, item, column):
         '''CheckState
@@ -232,14 +248,12 @@ class fire2amClassDialogArgparse(QtWidgets.QDialog):
                     self.args[key] = False
                     item.setText(2,'False')
             #print('antes',antes,'despues',self.args[key],sep='\t')
-        cmd = self.gen_cmd()
-        if self.clipboard_checkBox.isChecked():
-            pyperclip.copy(cmd)
+        self.gen_cmd()
 
     def gen_cmd(self):
-        #print('\tgen_cmd',end='\t')
         self.gen_args = {}
-        cmd=self.header_textEdit.toPlainText()
+        self.header = self.textEdit_header.toPlainText()
+        self.arg_str = ''
         iterator = QtWidgets.QTreeWidgetItemIterator(self.tree)
         item: QtWidgets.QTreeWidgetItem = iterator.value()
         while item is not None:
@@ -247,15 +261,21 @@ class fire2amClassDialogArgparse(QtWidgets.QDialog):
             if key in self.groups or item.checkState(0)==0:
                 pass
             elif self.parser[key]['type'] is None:
-                cmd += self.parser[key]['option_strings'][0] + ' '
+                self.arg_str += self.parser[key]['option_strings'][0] + ' '
                 self.gen_args[key] = True
             else:
-                cmd += self.parser[key]['option_strings'][0] + ' ' + str(self.args[key]) + ' '
+                self.arg_str += self.parser[key]['option_strings'][0] + ' ' + str(self.args[key]) + ' '
                 self.gen_args[key] = self.args[key]
             iterator += 1
             item = iterator.value()
+        cmd = self.header + ' ' + self.arg_str
         self.text.setPlainText(cmd)
-        return cmd
+        if self.clipboard_checkBox.isChecked():
+            pyperclip.copy(cmd)
+
+    def get(self):
+        self.gen_cmd()
+        return self.header, self.arg_str, self.gen_args, self.fileWidget_directory.filePath()
 
     def reloadTree(self, check_list):
         iterator = QtWidgets.QTreeWidgetItemIterator(self.tree)
@@ -279,20 +299,21 @@ class fire2amClassDialogArgparse(QtWidgets.QDialog):
             item = iterator.value()
         return check_list
     
-    def dumpState( self, atuple=None):
+    def dumpState( self, atuple):
         '''
             dumpState((parser, groups, args, get_check_list()))
         '''
-        pickle.dump( atuple , open('dump.pickle','wb'))
+        with open('dump.pickle','wb') as afile:
+            pickle.dump( atuple , afile)
     
     def loadState( self):
         '''
-            parser, groups, args = loadState()
+            parser, groups, args, check_list = loadState()
+            parser, groups, args, check_list = pickle.load( open('dump.pickle','rb'))
         '''
         if os.path.isfile('dump.pickle'):
-            return pickle.load( open('dump.pickle','rb'))
-        else:
-            print('no dump.pickle file available')
+            with open('dump.pickle','rb') as afile:
+                return pickle.load( afile)
 
     def slot_button_load_clicked( self):
         self.parser, self.groups, self.args, check_list = self.loadState()

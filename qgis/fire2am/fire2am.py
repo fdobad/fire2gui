@@ -22,29 +22,30 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QTimer
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QTimer, QProcess
 from qgis.PyQt.QtWidgets import QAction, QDoubleSpinBox, QSpinBox
-from qgis.PyQt.QtTest import QTest
+from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.Qt import Qt
-from qgis.core import QgsProject, Qgis, QgsWkbTypes, QgsMapLayerType, QgsFeatureRequest#, QgsMessageLog , QgsApplication, QgsTask
+from qgis.core import QgsProject, Qgis, QgsWkbTypes, QgsMapLayerType, QgsFeatureRequest, QgsMessageLog #,QgsApplication, QgsTask 
 
 # Initialize Qt resources from file resources.py
 from .img.resources import *
 # Import the code for the dialog
 from .fire2am_dialog import fire2amClassDialog
 from .fire2am_argparse import fire2amClassDialogArgparse
-from .fire2am_utils import (    randomDataFrame, MatplotlibModel, check, aName, log, 
-                                getVectorLayerStuff, pixelstopolygons, addautoincrementalfield, add2dIndex , addXYcentroid, get_params)
-from .ParseInputs import Parser
+from .fire2am_utils import randomDataFrame, check, aName, log, getVectorLayerStuff, pixelstopolygons, addautoincrementalfield, add2dIndex , addXYcentroid, get_params, MatplotlibModel
+#from .fire2am_QgisTask import Cell2FireTask
+from .ParseInputs2 import Parser2
 
-from pandas import DataFrame, read_csv
 from datetime import datetime, timedelta
+from pandas import DataFrame, read_csv
 from multiprocessing import cpu_count
+from argparse import Namespace
 from shutil import copy
 from glob import glob
 import numpy as np
 import os.path
+from shlex import split as shlex_split
 
 #import pdb
 #from qgis.PyQt.QtCore import pyqtRemoveInputHook
@@ -92,17 +93,34 @@ class fire2amClass:
         # Must be set in initGui() to survive plugin reloads
         self.first_start_dialog = None
         self.first_start_argparse = None
+        # argparse
+        self.default_args, self.parser, self.groups = get_params(Parser2)
+        self.gen_cmd = ''
+        self.args = ''
         # global
-        self.default_args, self.parser, self.groups = get_params(Parser)
         self.project = None
         self.layer = {}
-        self.plt = MatplotlibModel()
         self.args = {}
-        # timers
+        '''
+        # external running task
+        self.task = None
+        self.taskManager = QgsApplication.taskManager()
+        '''
+        # QProcess
+        self.proc_dir = os.path.join( self.plugin_dir, 'C2FSB')
+        self.proc_exe = 'python3 main.py'
+        self.proc = None
+        self.name_state = { QProcess.ProcessState.NotRunning: 'Not running',
+                            QProcess.ProcessState.Starting: 'Starting',
+                            QProcess.ProcessState.Running: 'Running' }
+        # radioButton delay actions timers
         self.timer_weatherFile = QTimer()
         self.timer_weatherFile.setSingleShot(True)
         self.timer_weatherFolder = QTimer()
         self.timer_weatherFolder.setSingleShot(True)
+        self.timer_wait_time = 5000
+        # TODO
+        self.plt = MatplotlibModel()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -328,13 +346,22 @@ class fire2amClass:
             self.layer['ignitionPoints'] = ignition_cells
 
         elif self.dlg.state['radioButton_ignitionProbMap']:
+            # TODO
             log( 'Checks not implemented', pre='ignitionProbMap',level=0, msgBar=self.dlg.msgBar)
 
     def makeInstance(self):
         '''mkdir directory, TODO from:copy&paste files to:write layers as new files
         '''
+        if os.path.isdir( self.args['InFolder']):
+            log( 'directory named %s, stopping!'%self.args['InFolder'], pre='Already Exists!', level=3, msgBar=self.dlg.msgBar)
+            return
         os.mkdir( self.args['InFolder'])
         log( self.args['InFolder'],pre='Created directory',level=0, msgBar=self.dlg.msgBar)
+
+        '''
+        spain look up table'''
+        copy( os.path.join( self.plugin_dir, 'spain_lookup_table.csv') , self.args['InFolder'])
+
         '''
         elevation '''
         elayer = self.dlg.state['layerComboBox_elevation']
@@ -416,10 +443,20 @@ class fire2amClass:
             self.dlg.radioButton_weatherFolder.clicked.connect( self.slot_radioButton_weatherFolder_clicked)
             self.dlg.radioButton_weatherFile.clicked.connect( self.slot_radioButton_weatherFile_clicked)
         elif ci == 2:
-            self.dlg.radioButton_ignitionPoints.clicked.connect(self.slot_radioButton_ignitionPoints_clicked)
             self.dlg.layerComboBox_ignitionPoints.layerChanged.connect(self.slot_layerComboBox_ignitionPoints_layerChanged)
-            #self.dlg.radioButton_ignitionProbMap.clicked.connect(self.slot_radioButton_ignitionProbMap_clicked)
+            '''
+            # TODO check raster layer prob data
             #self.dlg.layerComboBox_ignitionProbMap.layerChanged.connect(self.slot_layerComboBox_ignitionProbMap_layerChanged)
+            # TBD recheck?
+            #self.dlg.radioButton_ignitionPoints.clicked.connect(self.slot_radioButton_ignitionPoints_clicked)
+            #self.dlg.radioButton_ignitionProbMap.clicked.connect(self.slot_radioButton_ignitionProbMap_clicked)
+            '''
+        elif ci == 4:
+            self.dlg.pushButton_dev.pressed.connect(self.start_dev)
+            self.dlg.pushButton_run.pressed.connect(self.start_process)
+            self.dlg.pushButton_kill.pressed.connect(self.kill_process)
+            self.dlg.pushButton_terminate.pressed.connect(self.terminate_process)
+            self.dlg.pushButton_processLayers.pressed.connect(self.processLayers)
         elif ci == 5:
             self.dlg.toolButton_next.clicked.connect(self.slot_toolButton_next_clicked)
             self.dlg.toolButton_prev.clicked.connect(self.slot_toolButton_prev_clicked)
@@ -532,9 +569,9 @@ class fire2amClass:
         filepath = self.dlg.fileWidget_weatherFile.filePath()
         if self.dlg.state['fileWidget_weatherFile'] == filepath and filepath[:-3]=='csv' or filepath == None:
             return
-        #self.timer_weatherFile.timeout.connect( lambda : self.slot_fileWidget_weatherFile_fileChanged(filepath))
-        self.timer_weatherFile.timeout.connect( lambda : self.slot_fileWidget_weatherFile_fileChanged(self.dlg.fileWidget_weatherFile.filePath()))
-        self.timer_weatherFile.start(5000)
+        self.timer_weatherFile.timeout.connect( 
+                lambda : self.slot_fileWidget_weatherFile_fileChanged(self.dlg.fileWidget_weatherFile.filePath()))
+        self.timer_weatherFile.start(self.timer_wait_time)
 
     def slot_radioButton_weatherFolder_clicked(self):
         filepath = self.dlg.fileWidget_weatherFolder.filePath()
@@ -542,19 +579,17 @@ class fire2amClass:
             return
         #self.timer_weatherFolder.timeout.connect( lambda : self.slot_fileWidget_weatherFolder_fileChanged(filepath))
         self.timer_weatherFolder.timeout.connect( lambda : self.slot_fileWidget_weatherFolder_fileChanged(self.dlg.fileWidget_weatherFolder.filePath()))
-        self.timer_weatherFolder.start(5000)
+        self.timer_weatherFolder.start(self.timer_wait_time)
 
+    ''' TBD
     def slot_radioButton_ignitionPoints_clicked(self):
-        try:
-            layer = self.dlg.layerComboBox_ignitionPoints.currentLayer()
-            if self.args['layer_ignition_points'] == layer:
-                return
-            if layer.type() != QgsMapLayerType.VectorLayer:
-                QTest.qWait(2000)
-            layer = self.dlg.layerComboBox_ignitionPoints.currentLayer()
-            self.slot_layerComboBox_ignitionPoints_layerChanged(layer)
-        except Exception as e:
-            print('Exception' ,e)
+        layer = self.dlg.layerComboBox_ignitionPoints.currentLayer()
+        if self.state['layerComboBox_ignitionPoints'] == layer:
+            return
+        self.timer_ignitionPoints.timeout.connect( 
+                lambda : self.slot_layerComboBox_ignitionPoints_layerChanged(self.dlg.layerComboBox_ignitionPoints.currentLayer()))
+        self.timer_ignitionPoints.start(5000)
+    '''
 
     def slot_toolButton_next_clicked(self):
         print('next clicked')
@@ -563,14 +598,15 @@ class fire2amClass:
         print('prev clicked')
 
     def makeArgs(self):
-        ''' from self.args.copy()
+        ''' from self.default_args.copy()
             update dlg values from spinboxes
             update tab logic
                 weathers
                 ignitions
-            update argparse dialog
+            update argparse dialog gen_cmd (only true clicked boxes)
         '''
         args = {}
+        gen_cmd = ''
         log( 'makeArgs 0 base',args, level=0)
 
         '''
@@ -615,19 +651,28 @@ class fire2amClass:
                 args['OutFolder'] = os.path.join( args['InFolder'], 'results')
             if 'nthreads' not in self.argdlg.gen_args.keys():
                 args['nthreads'] = max(1, cpu_count()-2)
+            self.proc_dir = self.argdlg.fileWidget_directory.filePath()
+            self.proc_exe = self.argdlg.header
+            
+        for key,val in args.items():
+            if self.parser[key]['type'] is None:
+                gen_cmd += self.parser[key]['option_strings'][0] + ' '
+            else:
+                gen_cmd += self.parser[key]['option_strings'][0] + ' ' + str(args[key]) + ' '
 
         self.args = args
+        self.gen_cmd = gen_cmd 
         log( 'makeArgs 2 argparse + corrections self', self.args, level=0)
+        log( 'makeArgs 3 gen_cmd', self.gen_cmd, level=0)
 
     def slot_button_box_clicked(self, button):
         if button.text() == 'Reset':
             print('Reset')
-            self.dlg.updateState()
-            self.makeArgs()
+            self.cancelTask()
         elif button.text() == 'Apply':
             print('Apply')
-            self.dummyApply()
-            self.run_Simulation()
+            #self.dummyApply()
+            self.run_C2F()
         elif button.text() == 'Restore Defaults':
             print('Restore Defaults')
             if not self.first_start_dialog:
@@ -637,12 +682,118 @@ class fire2amClass:
                 self.first_start_argparse= True
                 self.argdlg.destroy()
 
-    def run_Simulation(self):
+    def run_C2F(self):
         self.now = datetime.now()
         self.dlg.updateState()
         self.processLayers()
         self.makeArgs()
         self.makeInstance()
+        self.start_process()
+
+    def message(self, s):
+        self.dlg.plainTextEdit.appendPlainText(s)
+
+    def kill_process(self):
+        if self.proc:
+            self.message(f"Attempting to kill proc with state: {self.name_state[self.proc.state()]}")
+            self.proc.kill()
+            return
+        self.message("Nothing to kill")
+
+    def terminate_process(self):
+        if self.proc:
+            self.message(f"Attempting to terminate proc with state: {self.name_state[self.proc.state()]}")
+            self.proc.terminate()
+            return
+        self.message("Nothing to terminate")
+
+    def start_process(self):
+        if self.proc is None:  # No process running.
+            self.message("Executing process")
+            log('start_process cmd: %s'%self.gen_cmd,level=0, msgBar=self.dlg.msgBar)
+            self.message('start_process cmd: %s'%self.gen_cmd)
+            self.proc = QProcess()
+            self.proc.setInputChannelMode(QProcess.ForwardedInputChannel)
+            self.proc.setProcessChannelMode( QProcess.SeparateChannels)
+            self.proc.readyReadStandardOutput.connect(self.handle_stdout)
+            self.proc.readyReadStandardError.connect(self.handle_stderr)
+            self.proc.stateChanged.connect(self.handle_state)
+            self.proc.finished.connect(self.process_finished)  # Clean up once complete.
+            self.proc.setWorkingDirectory( self.proc_dir)
+            ar = shlex_split( self.proc_exe +' '+ self.gen_cmd  )
+            self.message('process args %s'%ar)
+            log( 'ar', *ar, level=0)
+            self.proc.start( ar[0], ar[1:] )
+            '''basic
+            self.proc.setWorkingDirectory( os.path.join( self.plugin_dir, 'extras'))
+            self.proc.start("python3", ['dummy_proc.py'])
+            '''
+
+    def start_dev(self):
+        if self.proc is None:  # No process running.
+            self.message("starting process")
+            self.proc = QProcess()
+            self.proc.setInputChannelMode( QProcess.ForwardedInputChannel)
+            self.proc.setProcessChannelMode( QProcess.SeparateChannels)
+            self.proc.readyReadStandardOutput.connect( self.handle_stdout)
+            self.proc.readyReadStandardError.connect( self.handle_stderr)
+            self.proc.stateChanged.connect( self.handle_state)
+            self.proc.finished.connect( self.process_finished)
+
+            header, arg_str, _, workdir = self.argdlg.get()
+            self.proc.setWorkingDirectory( workdir)
+            ar = shlex_split( header + ' ' + arg_str )
+            self.proc.start( ar[0], ar[1:] )
+            self.message('started process cmd %s'%ar)
+            self.message('started process dir %s'%workdir)
+            log('started process cmd', ar, level=0, msgBar=self.dlg.msgBar)
+            log('started process dir', workdir, level=0, msgBar=self.dlg.msgBar)
+
+    def handle_stderr(self):
+        data = self.proc.readAllStandardError()
+        stderr = bytes(data).decode("utf8")
+        self.message('e '+stderr)
+
+    def handle_stdout(self):
+        data = self.proc.readAllStandardOutput()
+        stdout = bytes(data).decode("utf8")
+        self.message('o '+stdout)
+
+    def handle_state(self, state):
+        self.message(f"State changed: {self.name_state[state]}")
+
+    def process_finished(self):
+        self.message("Process finished.")
+        self.proc = None
+
+
+    '''
+    def startTask(self):
+        argsNs = Namespace(**self.args)
+        run = False
+        if not hasattr(self,'task'):
+            run = True
+        elif self.task is None:
+            run = True
+        elif isinstance( self.task, QgsTask) and hasattr( self.task, 'status') and self.task.status()==4:
+            run = True
+        if run:
+            self.task = Cell2FireTask(argsNs , self.args['InFolder'])
+            self.taskManager.addTask(self.task)
+            log('Task status %s'%self.task.status(),pre = 'Task added!', level=4, msgBar=self.dlg.msgBar)
+        else:
+            log('Task status %s'%self.task.status(),pre = 'Already running!', level=3, msgBar=self.dlg.msgBar)
+
+    def cancelTask(self):
+        if self.task is None:
+            log('Task is None',pre = 'Nothing to cancel!', level=0, msgBar=self.dlg.msgBar)
+            return
+        if self.task.canCancel():
+            self.task.cancel()
+            log('Task status %s'%self.task.status(),pre = 'Cancel signal sent!', level=0, msgBar=self.dlg.msgBar)
+            return
+        log('Task status %s'%self.task.status(),pre = 'Not canceled!', level=0, msgBar=self.dlg.msgBar)
+    '''
 
     def dummyApply(self):
         # data
