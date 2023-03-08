@@ -2,23 +2,83 @@
 #REPLENV: /home/fdo/pyenv/qgis
 from pandas import DataFrame, Series
 import numpy as np
+import os
 
 '''CONSTANTS'''
 aName = 'fire2am'
+
 
 ''' QGIS 
     processing is in PYTHONPATH 
     <module 'processing' from '/usr/share/qgis/python/plugins/processing/__init__.py'>
 '''
+
+from qgis.core import QgsVectorLayer, QgsVectorFileWriter, QgsFeature, QgsPointXY, QgsGeometry #QgsPoint, 
+def cellIds2matchingLayer( ignitionPoints, rasterLayer, geo_package_file='outputs.gpkg', layerName='ignition points'):
+    rex = rasterLayer.extent()
+    w, h = rasterLayer.width(), rasterLayer.height()
+    xs = np.linspace( rex.xMinimum(), rex.xMaximum(), w+1 )
+    ys = np.linspace( rex.yMinimum(), rex.yMaximum(), h+1 )
+    dx = xs[1]-xs[0]
+    dy = ys[1]-ys[0]
+    
+    pts = []
+    for p in ignitionPoints:
+        x,y = id2cellxy( p, w, h)
+        f = QgsFeature()
+        #f.setGeometry( QgsPoint( xs[x]+dx/2, ys[y]+dy/2)) 
+        f.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(xs[x]+dx/2, ys[y]+dy/2)))
+        pts += [ f]
+    
+    vectorLayer = QgsVectorLayer( 'point', layerName, 'memory')
+    ret, val = vectorLayer.dataProvider().addFeatures(pts)
+    print('addFeatures',ret, val)
+    
+    options = QgsVectorFileWriter.SaveVectorOptions()
+    options.driverName = 'GPKG'
+    options.layerName = layerName
+    if os.path.exists(geo_package_file):
+        options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
+    else:
+        options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
+    ret, val = QgsVectorFileWriter.writeAsVectorFormat( vectorLayer , geo_package_file, options)
+    print('VectorFileWriter', ret, val)
+
+from qgis.core import Qgis, QgsRasterFileWriter, QgsRasterBlock, QgsCoordinateReferenceSystem
+from qgis.PyQt.QtCore import QByteArray
+def csv2rasterInt16( extent, layerName, filepath = 'result/Grids/Grids1/ForestGrid04.csv', crs = QgsCoordinateReferenceSystem('IGNF:UTM31ETRS89'), outpath= 'rastersInt16.gpkg'):
+    data = np.loadtxt( filepath, dtype=np.int16, delimiter=',')
+    if not np.any(np.where( data == 1 )):
+        return False, 'no ones'
+    h,w = data.shape
+    bites = QByteArray( data.tobytes() ) 
+    block = QgsRasterBlock( Qgis.CInt16, w, h)
+    block.setData( bites)
+    if not block.isValid():
+        return False, 'block invalid'
+    fw = QgsRasterFileWriter(outpath)
+    fw.setOutputFormat('gpkg')
+    fw.setCreateOptions(['RASTER_TABLE='+layerName, 'APPEND_SUBDATASET=YES'])
+    provider = fw.createOneBandRaster( Qgis.Int16, w, h, extent, crs )
+    ''' mark zeros as nodata '''
+    provider.setNoDataValue(1, 0)
+    if not provider.isValid():
+        return False, 'provider invalid'
+    if not provider.isEditable():
+        return False, 'provider not editable'
+    if not provider.writeBlock( block, 1, 0, 0):
+        return False, 'provider failed to write block'
+    return True, 'sucess for'+layerName
+
 import processing
-from collections import namedtuple
 from qgis.core import QgsVectorDataProvider, QgsField, QgsGeometry #, QgsFeatureRequest
 from qgis.PyQt.QtCore import QVariant
 
-LayerStuff = namedtuple('layerStuff', 'names attr geom len')
+from collections import namedtuple
 def getVectorLayerStuff( layer) -> namedtuple:
     '''TODO add field_types = [f.typeName() for f in layer.fields()]
     '''
+    LayerStuff = namedtuple('layerStuff', 'names attr geom len')
     names = [f.name() for f in layer.fields()]
     attributes = []
     geometry = []
@@ -29,6 +89,23 @@ def getVectorLayerStuff( layer) -> namedtuple:
                         attr = np.array(attributes), 
                         geom = np.array(geometry), 
                         len = len(geometry) )
+
+def rasterpolygonize(layer, output=None):# ): #
+    ''' processing.algorithmHelp('gdal:polygonize')
+    { 'BAND' : 1, 'EIGHT_CONNECTEDNESS' : False, 'EXTRA' : '', 'FIELD' : 'DN', 'INPUT' : layer, 'OUTPUT' : 'TEMPORARY_OUTPUT' })
+    '''
+    tmp = processing.run('gdal:polygonize',{ 'BAND' : 1, 'EIGHT_CONNECTEDNESS' : False, 'EXTRA' : '', 'FIELD' : 'DN', 'INPUT' : layer, 'OUTPUT' : output })
+    return tmp['OUTPUT']
+
+def mergeVectorLayers(layerList, ogrDB, tableName):
+    '''processing.algorithmHelp('native:mergevectorlayers') -> Merge vector layers
+            { 'CRS' : None, 'LAYERS' : layerList, 'OUTPUT' : 'TEMPORARY_OUTPUT' })
+            ['/home/.../FireEvolution.gpkg|layername=polygon_ForestGrid01','/home...FireEvolution.gpkg|layername=polygon_ForestGrid02', ...]
+            'OUTPUT' : 'ogr:dbname=\'/home/.../FireEvolution.gpkg\' table=\"merged_polygons\" (geom) sql='
+    '''
+    tmp = processing.run('native:mergevectorlayers',
+            { 'CRS' : None, 'LAYERS' : layerList, 'OUTPUT' : 'ogr:dbname=\''+ogrDB+'\' table=\"'+tableName+'\" (geom) sql=' })
+    return tmp
 
 def pixelstopolygons(layer): 
     '''processing.algorithmHelp('native:pixelstopolygons')
@@ -132,6 +209,24 @@ def convertRasterToNumpyArray(lyr): #Input: QgsRasterLayer
             values.append(block.value(i,j))
     return np.array(values)
 
+from itertools import islice
+def csv2ascList( file_list = ['ForestGrid00.csv','ForestGrid01.csv'], header_file = 'elev.asc' ):
+    with open( header_file, 'r') as afile:
+        header = list(islice(afile, 6))
+    for afile in file_list:
+        fname = afile[:-4]
+        csv2ascFile( in_file = afile, header = header, out_file = fname+'.asc')
+
+def csv2ascFile( in_file = 'ForestGrid00.csv', 
+        header = ['ncols 508\n', 'nrows 610\n', 'xllcorner 494272.38261041\n', 'yllcorner 4652115.6527613\n', 'cellsize 20\n', 'NODATA_value -9999\n'],
+        out_file = 'ForestGrid00.asc'):
+    
+    with open(out_file, 'w') as outfile:
+        outfile.writelines(header)
+
+    with open( in_file, 'rb', buffering=0) as infile:
+        with open(out_file, 'ab') as outfile:
+            outfile.write(infile.read().replace(b',',b' '))
 
 # Qt
 ''' 
@@ -170,9 +265,88 @@ class MatplotlibModel(QGraphicsScene):
         # insert widget into scene into view:
         self.addItem(proxy_widget)
         gv.setScene(self)
+'''
+    https://matplotlib.org/stable/api/figure_api.html
+    class matplotlib.figure.Figure(figsize=None, dpi=None, *, facecolor=None, edgecolor=None, linewidth=0.0, frameon=None, subplotpars=None, tight_layout=None, constrained_layout=None, layout=None, **kwargs)
+    ax          = canvas.figure.add_axes
+    add_subplot
+    subplots
+    clf
+'''
+from qgis.PyQt.QtWidgets import QGraphicsScene, QGraphicsView, QComboBox, QWidget, QVBoxLayout, QGraphicsProxyWidget
+from matplotlib.backends.backend_qtagg import FigureCanvas, NavigationToolbar2QT as NavigationToolbar
+from matplotlib.figure import Figure
+class MatplotlibFigures(QGraphicsScene):
+    def __init__(self, parent = None, graphicsView = None):
+        super(MatplotlibFigures, self).__init__(parent)
+        self.canvass = []
+        self.proxy_widgets = []
+        self.resize = []
+        self.cv = -1
+        self.graphicsView = graphicsView
+        self.oldResizeEvent = self.graphicsView.resizeEvent
+        self.graphicsView.resizeEvent = self.resizeEvent
+        self.graphicsView.setScene(self)
 
-from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtCore import QVariant, QAbstractTableModel
+    def resizeEvent(self, QResizeEvent):
+        if self.cv == -1:
+            return
+        if not self.resize[self.cv]:
+            return
+        oldSize = QResizeEvent.oldSize()
+        ow = oldSize.width()
+        oh = oldSize.height()
+        size = QResizeEvent.size()
+        w = size.width()
+        h = size.height()
+        ds = abs(w-ow)+abs(h-oh)
+        if ds < 4:
+            return
+        if ds < 8:
+            self.fit2gv(self.cv)
+            return
+        self.proxy_widgets[self.cv].resize(w-5,h-5)
+        self.oldResizeEvent( QResizeEvent)
+
+    def new(self, w = None, h = None, **kwargs):
+        if w and h:
+            canvas = FigureCanvas( Figure( figsize=(w, h), **kwargs))
+            self.resize += [ False ]
+        else:
+            canvas = FigureCanvas( Figure( **kwargs))
+            self.resize += [ True ]
+        proxy_widget = QGraphicsProxyWidget()
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.addWidget( NavigationToolbar(canvas))
+        layout.addWidget( canvas)
+        widget.setLayout( layout)
+        proxy_widget.setWidget(widget)
+        proxy_widget.setVisible(False)
+        self.addItem(proxy_widget)
+        self.canvass += [ canvas ]
+        self.proxy_widgets += [ proxy_widget]
+        return canvas
+
+    def resize2gv(self, idx):
+        w = self.graphicsView.size().width() - 5
+        h = self.graphicsView.size().height() - 5
+        self.proxy_widgets[idx].resize(w,h)
+
+    def fit2gv(self, idx):
+        self.graphicsView.fitInView( self.proxy_widgets[idx])
+
+    def show(self, idx):
+        if self.cv == idx:
+            return
+        if self.resize[idx]:
+            self.resize2gv(idx)
+        self.proxy_widgets[idx].setVisible(True)
+        self.proxy_widgets[self.cv].setVisible(False)
+        self.cv = idx
+
+
+from qgis.PyQt.QtCore import Qt, QVariant, QAbstractTableModel
 ''' show pandas dataframe in qt '''
 class PandasModel(QAbstractTableModel):
     def __init__(self, data, parent=None):
@@ -200,6 +374,10 @@ class PandasModel(QAbstractTableModel):
 def get_params(Parser):
     ''' get an argparse object that has groups 
         args, parser, groups = get_params(Parser)
+
+        from argparse import ArgumentParser
+        parser = ArgumentParser()
+
     '''
     parser, groups = get_grouped_parser(Parser())
     args = { dest:parser[dest]['default'] for dest in parser.keys() }
@@ -234,7 +412,9 @@ def get_grouped_parser(parser):
     return args, groups
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)-8s %(message)s' ,datefmt='%Y-%m-%d %H:%M:%S')
+#logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 from qgis.core import Qgis, QgsMessageLog
 def log(*args, pre='', level=1, plugin=aName, msgBar=None):
     '''
@@ -253,7 +433,13 @@ def log(*args, pre='', level=1, plugin=aName, msgBar=None):
     '''
     plugin = str(plugin)+' ' if plugin!='' else ''
     pre = str(pre)+' ' if pre!='' else ''
-    args = str(args)+' ' if args!=None else ''
+    
+    if isinstance(args,tuple) and args!='':
+        tmp = []
+        for a in args:
+            tmp += [str(a)]
+        args = ' '.join(tmp)
+
     if level == 0:
         logging.debug( plugin+pre+args)
         QgsMessageLog.logMessage( 'debug '+pre+args, plugin, level=Qgis.Info) 
@@ -317,4 +503,19 @@ def safe_cast_ok(val, to_type, default=None):
 def check(obj,key):
     return hasattr(obj, key) and callable(getattr(obj, key))
 
+if __name__ == "__main__":
+    '''
+    from qgis.core import QgsApplication, QgsProject
+    from qgis.gui import QgsMapCanvas
+    app = QgsApplication([], True)
+    app.initQgis()
+    canvas = QgsMapCanvas()
+    project = QgsProject.instance()
+    '''
+    import sys
+    from qgis.PyQt import QtWidgets
+    app    = QtWidgets.QApplication(sys.argv)
+    window = QtWidgets.QMainWindow()
+    scene = QtWidgets.QScene()
+    graphicsView = QtWidgets.QGraphicsView()
 

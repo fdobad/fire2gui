@@ -74,11 +74,16 @@ def Parser2():
                         dest="max_fire_periods",
                         type=int,
                         default=1000) 
-    landscape.add_argument("--fmc",
+    weather.add_argument("--fmc",
                         help="foliar moisture content for every fuel)",
                         dest="fmc",
                         type=int,
-                        default=100) 
+                        default=100)
+    weather.add_argument("--scenario",
+                        help="surface moisture content scenario)",
+                        dest="scenario",
+                        type=int,
+                        default=3)
     fire.add_argument("--IgnitionRad",
                         help="Adjacents degree for defining an ignition area (around ignition point)",
                         dest="IgRadius",

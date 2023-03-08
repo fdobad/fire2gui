@@ -30,7 +30,7 @@ from qgis.PyQt.QtCore import QEvent, Qt
 from qgis.PyQt.QtGui import QKeySequence
 
 import os,csv, io
-from .fire2am_utils import PandasModel
+from .fire2am_utils import PandasModel, MatplotlibFigures
 
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
@@ -53,6 +53,7 @@ class fire2amClassDialog(QtWidgets.QDialog, FORM_CLASS):
         '''Customize.'''
         self.setWindowFlags( Qt.WindowCloseButtonHint | Qt.WindowMaximizeButtonHint)
         self.msgBar = QgsMessageBar()
+        self.msgBar.setSizePolicy( QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred) #Fixed Maximum
         ''' TODO qlabel vertical expand 
             self.msgBar.setSizePolicy( QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding) #Fixed Maximum
                 for c in self.msgBar.children():
@@ -63,10 +64,9 @@ class fire2amClassDialog(QtWidgets.QDialog, FORM_CLASS):
         '''
         self.layout().addWidget(self.msgBar) # at the end: .insertRow . see qformlayout
         self.PandasModel = PandasModel
+        self.plt = MatplotlibFigures( parent = parent, graphicsView = self.graphicsView)
         self.tableView_1.installEventFilter(self)
         self.tableView_2.installEventFilter(self)
-        #self.tableView_1.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
-        #self.tableView_2.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         self.state = {}
         self.updateState()
         self.args = {}
@@ -143,5 +143,8 @@ class fire2amClassDialog(QtWidgets.QDialog, FORM_CLASS):
                     column = index.column() - columns[0]
                     model.setData(model.index(index.row(), index.column()), arr[row][column])
         return
+    scrap init
+        self.tableView_1.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.tableView_2.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
     '''
 
