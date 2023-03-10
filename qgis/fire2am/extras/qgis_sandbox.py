@@ -159,7 +159,7 @@ def checkAllLayersHaveSameExtent( layers = QgsProject.instance().mapLayers()):
 
 ''' v1 for standalone use '''
 from qgis.testing import start_app
-start_app()
+app = start_app()
 ''' v2 for standalone use '''
 from qgis.core import QgsApplication
 app = QgsApplication([], True)

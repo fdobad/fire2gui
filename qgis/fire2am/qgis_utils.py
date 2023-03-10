@@ -359,6 +359,24 @@ def matchPointLayer2RasterLayer( raster, point):
 
 ''' OK ZONE '''
 
+from qgis.PyQt.QtCore import QByteArray
+from qgis.core import Qgis, QgsRasterFileWriter, QgsRasterBlock
+def array2rasterInt16( data, name, geopackage, extent, crs, nodata = None):
+    data = np.int16(data)
+    h,w = data.shape
+    bites = QByteArray( data.tobytes() ) 
+    block = QgsRasterBlock( Qgis.CInt16, w, h)
+    block.setData( bites)
+    fw = QgsRasterFileWriter(outpath)
+    fw.setOutputFormat('gpkg')
+    fw.setCreateOptions(['RASTER_TABLE='+name, 'APPEND_SUBDATASET=YES'])
+    provider = fw.createOneBandRaster( Qgis.Int16, w, h, extent, crs )
+    provider.setEditable(True)
+    provider.writeBlock( block, 1, 0, 0):
+    if nodata != None:
+        provider.setNoDataValue(1, nodata)
+    provider.setEditable(False)
+    del provider, fw, block
 
 from qgis.PyQt.QtCore import QByteArray
 from qgis.core import Qgis, QgsRasterBlock, QgsRasterFileWriter

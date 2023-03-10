@@ -37,8 +37,8 @@ from .img.resources import *
 # Import the code for the dialog
 from .fire2am_dialog import fire2amClassDialog
 from .fire2am_argparse import fire2amClassDialogArgparse
-from .fire2am_utils import check, aName, log, get_params, randomDataFrame, csv2rasterInt16, mergeVectorLayers, cellIds2matchingLayer
-from .qgis_utils import check_gdal_driver_name, matchPoints2Raster, matchRasterCellIds2points, array2rasterFloat32
+from .fire2am_utils import check, aName, log, get_params, randomDataFrame, mergeVectorLayers
+from .qgis_utils import check_gdal_driver_name, matchPoints2Raster, matchRasterCellIds2points, array2rasterFloat32, array2rasterInt16
 from .ParseInputs2 import Parser2
 
 from pandas import DataFrame, read_csv, Timestamp
@@ -826,13 +826,13 @@ class fire2amClass:
         numbers = np.fromiter( re.findall( 'Grids([0-9]+)'+os.sep+'ForestGrid([0-9]+).csv', 
                                             ' '.join(filelist)), 
                                 dtype=[('x',int),('y',int)])
-        #log( filelist, level=1)
-        #log( numbers, level=1)
-        sorted_numbers = np.argsort(numbers, order=('x','y'))
-        filelist = np.array(filelist)
-        filelist = filelist[sorted_numbers]
-        numbers = numbers[sorted_numbers]
-        first, second = np.array([ [ num[0], num[1] ] for num in numbers ]).T
+        asort = np.argsort(numbers, order=('x','y'))[::-1]
+        numbers  = np.array([ [ n[0], n[1] ] for n in numbers ])[asort]
+        doindex = np.unique( numbers[:,0], return_index=True)[1]
+        filelist = np.array(fl)[sort][doindex]
+        numbers = numbers[doindex]
+
+        first, second = numbers.T
         len1st, len2nd = len(str(np.max(first))), len(str(np.max(second)))
 
         ''' get all csv 2 array '''
@@ -849,6 +849,14 @@ class fire2amClass:
         array2rasterFloat32(  np.std( data, axis=0),  'std_prob_burn', geo_package_file, extent, crs, nodata = 0.0)
         self.externalProcess_message('Added std_prob_burn raster')
         self.externalProcess_message('Burn probabilities global statistics'+str(stats.describe(data, axis=None)))
+
+        ''' calc fire scars'''
+        self.externalProcess_message('Making fire scar rasters...')
+        for i,(nsim,ngrid) for enumerate(numbers):
+            layerName = 'FireScar_'+str(nsim).zfill(len1st)+'_'+str(ngrid).zfill(len2nd)
+            raster = array2rasterInt16( data[i], layerName, geo_package_file, extent, crs, nodata = 0)
+            #raster = array2rasterLayerInt16( data[i], layerName, geo_package_file, extent, crs, nodata = 0)
+            #poly = raster2poly( raster, layerName, extent, crs)
 
         fl = sorted(glob( self.args['OutFolder']+os.sep+'Grids'+os.sep+'Grids[0-9]*'+os.sep+'*csv'), key=os.path.getmtime)
         indexes = re.findall( 'Grids([0-9]+)', ' '.join(fl))
